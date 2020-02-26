@@ -5,9 +5,16 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract StormXToken is ERC20 {
 
-  constructor() public {}
+  // Public variables of the token
+  string public standard;
+  string public name;
+  string public symbol;
+  uint8 public decimals;
 
-  function test() public pure returns (bool) {
-    return true;
+  constructor() public {
+    standard = "Storm Token v2.0";
+    name = "Storm Token";
+    symbol = "STORM"; // token symbol
+    decimals = 18;
   }
 }

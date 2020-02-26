@@ -1,0 +1,26 @@
+{
+    "env": {
+        "es6": true,
+        "node": true,
+        "mocha": true,
+        "jest": true
+    },
+    "extends": [
+        "eslint:recommended"
+    ],
+    "parserOptions": {
+        "ecmaVersion": 2017,
+        "sourceType": "module"
+    },
+    "rules": {
+      "semi": [2],
+      "indent": [2, 2, { "SwitchCase": 1 }],
+      "comma-spacing": ["error", { "before": false, "after": true }],
+      "no-console": [0]
+    },
+    "globals": {
+        "artifacts": true,
+        "contract": true,
+        "assert": true
+    }
+}

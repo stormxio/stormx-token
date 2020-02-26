@@ -1,0 +1,16 @@
+dist: xenial
+language: node_js
+node_js:
+  - 11.10.0
+install:
+  - npm install
+before_script:
+  - export PATH="$PATH:./node_modules/.bin"
+  - truffle version
+script:
+  - npm run lint
+  - travis_wait 55 npm run test-cov
+after_script:
+  - echo Build completed on `date`
+  - npm run coveralls-collect
+

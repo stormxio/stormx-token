@@ -1,6 +1,5 @@
 const StormX = artifacts.require("StormXToken");
 
-
 contract("StormX token test", async function() {
   let stormX;
 

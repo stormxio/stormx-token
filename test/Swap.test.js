@@ -2,7 +2,6 @@ const StormX = artifacts.require("StormXToken");
 const OldToken = artifacts.require("StormToken");
 const Swap = artifacts.require("Swap");
 const Utils = require("./Utils.js");
-const Constants = require("./Constants.js");
 
 
 contract("StormX token swap test", async function(accounts) {

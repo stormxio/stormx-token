@@ -19,15 +19,13 @@ contract Swap is Ownable {
   event MigrationLeftoverTransferred(address stormXReserve, uint256 amount);
   event TokenConverted(address indexed account, uint256 newToken);
 
-
   // todo(Eeeva1227): SX-6: uncomment when support closing token swap
   // currently commented out for improving test coverage
   // modifier canMigrate() {
   //   require(migrationOpen, "Token Migration not available");
   //   _;
-  // }
-
-  constructor() public {
+  // }                           
+  constructor() public {      
     migrationOpen = true;
     emit MigrationOpen();
   }

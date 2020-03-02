@@ -47,6 +47,6 @@ contract("StormX token test", async function(accounts) {
   });
 
   it("revert when invalid address provided in set stormX reserve", async function() {
-    await Utils.assertTxFail(stormX.setStormXReserve(Constants.ADDRESS_ZERO, {from: user}));
+    await Utils.assertTxFail(stormX.setStormXReserve(Constants.ADDRESS_ZERO, {from: owner}));
   });
 });

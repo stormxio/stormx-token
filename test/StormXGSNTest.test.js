@@ -17,14 +17,17 @@ contract("StormX token GSN test", async function(accounts) {
   let gsnDevProvider;
   
   // Set up the testing environment using javascript
-  beforeEach(async function () {
-    this.web3 = new Web3("http://localhost:8545");
+  beforeEach(async function () { 
+    // using port 8555 to pass travis CI check and test-cov
+    // if run ganache locally, should set the port to 8555
+    // instead of using port 8545
+    this.web3 = new Web3("http://localhost:8555");
     this.accounts = await this.web3.eth.getAccounts();
 
     await deployRelayHub(this.web3);
     await runRelayer(this.web3, { quiet: true});
 
-    gsnDevProvider = new GSNDevProvider("http://localhost:8545", {
+    gsnDevProvider = new GSNDevProvider("http://localhost:8555", {
       ownerAddress: this.accounts[0],
       relayerAddress: this.accounts[1]
     });

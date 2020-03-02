@@ -6,8 +6,8 @@ const {
 const {GSNDevProvider} = require("@openzeppelin/gsn-provider");
 const Web3 = require("web3");
 const Constants = require("./Constants.js");
-const path = require("path");
-const stormXContract = require(path.resolve(__dirname, "../build/contracts/StormXToken.json"));
+
+const stormXContract = Constants.STORMX_CONTRACT;
 
 
 contract("StormX token GSN test", async function(accounts) {

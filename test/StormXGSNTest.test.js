@@ -10,7 +10,6 @@ const path = require("path");
 const stormXContract = require(path.resolve(__dirname, "../build/contracts/StormXToken.json"));
 
 
-
 contract("StormX token GSN test", async function(accounts) {
   const user = accounts[2];
 

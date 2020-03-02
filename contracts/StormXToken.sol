@@ -14,9 +14,13 @@ contract StormXToken is ERC20Detailed("Storm Token", "STORM", 18), ERC20, GSNRec
   uint256 public chargeFee;
   address public stormXReserve; 
 
+  // Testing that GSN is supported properly 
+  event Test(string funcName, address indexed sender, bytes data);
+
   constructor() public { 
     standard = "Storm Token v2.0";
     chargeFee = 10;
+    stormXReserve = _msgSender();
   }
 
   function acceptRelayedCall(
@@ -33,16 +37,31 @@ contract StormXToken is ERC20Detailed("Storm Token", "STORM", 18), ERC20, GSNRec
     external
     view
     returns (uint256, bytes memory) {
-      if (balanceOf(from) < chargeFee) {
-        return _rejectRelayedCall(NO_ENOUGH_BALANCE);
-      } else {
-        // Requires user's approval
-        transferFrom(from, stormXReserve, chargeFee);
-        return _approveRelayedCall();
-      }
+
+      // todo(Eeeva1227) SX-10: add logic for supporting GSN
+      // if (balanceOf(from) < chargeFee) {
+      //   return _rejectRelayedCall(NO_ENOUGH_BALANCE);
+      // } else {
+      //   return _approveRelayedCall();
+      // }
+      
+      return _approveRelayedCall();
     }
 
-  function test() public pure returns (bool) {
-    return true;
-  }  
+  function test() public {
+    emit Test("Test", _msgSender(), _msgData());
+  }
+
+  function _preRelayedCall(bytes memory context) internal returns (bytes32) {
+    emit Test("_preRelayedCall", _msgSender(), _msgData());
+  }
+
+  function _postRelayedCall(
+    bytes memory context, 
+    bool success, 
+    uint256 actualCharge, 
+    bytes32 preRetVal
+  ) internal {
+    emit Test("_postRelayedCall", _msgSender(), _msgData());
+  }
 }

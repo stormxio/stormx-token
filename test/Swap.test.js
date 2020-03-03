@@ -17,11 +17,11 @@ contract("StormX token swap test", async function(accounts) {
     oldToken = await OldToken.new(owner, {from: owner});
     swap = await Swap.new({from:owner});
     stormX = await StormX.new(swap.address, reserve, {from:owner});
-    await swap.initialize(oldToken.address, stormX.address, {from: owner});
 
-    // transfer the ownership to contract swap
+    // transfer the ownership to contract swap and initialize it
     await oldToken.transferOwnership(swap.address, {from: owner});
-    await swap.acceptOwnership();
+    await swap.initialize(oldToken.address, stormX.address, {from: owner});
+    assert.equal(await oldToken.owner(), swap.address);
 
     // mint some tokens for testing
     await oldToken.mintTokens(user, 100, {from: owner});
@@ -31,9 +31,27 @@ contract("StormX token swap test", async function(accounts) {
     await Utils.assertTxFail(swap.initialize(oldToken.address, stormX.address, {from: owner}));
   });
 
+  it("revert if ownership is not transferred before initialize test", async function() {
+    let testSwap = await Swap.new({from: owner});
+    await Utils.assertTxFail(testSwap.initialize(oldToken.address, stormX.address, {from: owner}));
+  });
+
   it("revert if non-owner calls initialize test", async function() {
     let testSwap = await Swap.new({from: owner});
     await Utils.assertTxFail(testSwap.initialize(oldToken.address, stormX.address, {from: user}));
+  });
+
+  it("initialize success test", async function() {
+    let testSwap = await Swap.new({from: owner});
+    oldToken = await OldToken.new(owner, {from: owner});
+    await oldToken.transferOwnership(testSwap.address, {from: owner});
+    await testSwap.initialize(oldToken.address, stormX.address, {from: owner});
+
+    // assert fields are initialized properly
+    // and swap contract holds the ownership of the old token
+    assert.equal(await oldToken.owner(), testSwap.address);
+    assert.equal(await testSwap.oldToken(), oldToken.address);
+    assert.equal(await testSwap.newToken(), stormX.address);  
   });
 
   it("revert if no enough balance in token swap test", async function() {

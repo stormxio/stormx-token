@@ -14,6 +14,7 @@ contract Swap is Ownable {
   // Variables for supporing token swap
   bool public migrationOpen;
 
+  event Initialized(address oldToken, address newToken);
   event MigrationOpen();
   event MigrationClosed();
   event MigrationLeftoverTransferred(address stormXReserve, uint256 amount);
@@ -30,22 +31,30 @@ contract Swap is Ownable {
     emit MigrationOpen();
   }
 
+  /**
+   * @dev Initializes the old token and the new token to interact with 
+   *      Accepts the ownership of the old token
+   *      Important: the ownership of the old token should be transferred
+   *      to this contract before calling this function
+   * @param _oldToken address of the deployed old token
+   * @param _newToken address of the deployed new token
+   */
   function initialize(address _oldToken, address _newToken) public onlyOwner {
     require(!initialized, "cannot initialize twice");
     oldToken = StormToken(_oldToken);
     newToken = StormXToken(_newToken);
-    initialized = true;
-  }
-
-  // For accepting the ownership of original token
-  function acceptOwnership() public {
     oldToken.acceptOwnership();
+    initialized = true;
+    emit Initialized(_oldToken, _newToken);
   }
 
+  /**
+   * @dev Swaps certain amount of old tokens to new tokens for the user
+   * @param amount specified amount of old tokens to swap
+   * @return success status of the conversion
+   */
   function convert(uint256 amount) public returns (bool) {
-    // convert does not support GSN
-    // todo(Eeeva1227) SX-11: need modifications 
-    // if supporting GSN is required for token swap
+    // todo(Eeeva1227) SX-10: add GSN logic since convert should support GSN 
     address account = msg.sender;
     require(oldToken.balanceOf(account) >= amount, "No enough balance");
     

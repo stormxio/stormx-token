@@ -7,11 +7,16 @@ contract("StormX token test", async function(accounts) {
   const reserve = accounts[1];
   const swapAddress = accounts[2];
   const user = accounts[3];
+  const receiver = accounts[4];
 
   let stormX;
 
   beforeEach(async function(){
     stormX = await StormX.new(swapAddress, reserve, {from: owner});
+
+    // mint some stormX tokens for testing
+    await stormX.mint(user, 100, {from: owner});
+    assert.equal(await stormX.balanceOf(user), 100);
   });
 
   it("name test", async function() {
@@ -48,5 +53,174 @@ contract("StormX token test", async function(accounts) {
 
   it("revert when invalid address provided in set stormX reserve", async function() {
     await Utils.assertTxFail(stormX.setStormXReserve(Constants.ADDRESS_ZERO, {from: owner}));
+  });
+
+  it("read locked balance of user success test", async function() {
+    // no locked tokens initially
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    
+    // lock certain amount of tokens
+    await stormX.lock(30, {from: user});
+ 
+    // assert locked token balance
+    assert.equal(await stormX.lockedBalanceOf(user), 30);
+
+    // assert total balance
+    assert.equal(await stormX.balanceOf(user), 100);
+  });
+
+  it("read unlocked balance of user success test", async function() {
+    // no locked tokens initially
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    
+    // lock certain amount of tokens
+    await stormX.lock(30, {from: user});
+ 
+    // assert unlocked token balance
+    assert.equal(await stormX.unlockedBalanceOf(user), 70);
+
+    // assert total balance
+    assert.equal(await stormX.balanceOf(user), 100);
+  });
+
+  it("transfer reverts if not enough unlocked token test", async function() {
+    // no locked tokens initially
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    
+    // lock certain amount of tokens
+    await stormX.lock(90, {from: user});
+ 
+    // assert unlocked token balance
+    assert.equal(await stormX.unlockedBalanceOf(user), 10);
+
+    await Utils.assertTxFail(stormX.transfer(receiver, 100, {from: user}));
+    assert.equal(await stormX.balanceOf(user), 100);
+  });
+
+  it("transfer success test", async function() {
+    // no locked tokens initially
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    
+    // lock certain amount of tokens
+    await stormX.lock(90, {from: user});
+ 
+    // assert unlocked token balance
+    assert.equal(await stormX.unlockedBalanceOf(user), 10);
+
+    await stormX.transfer(receiver, 5, {from: user});
+
+    // assert proper total balance
+    assert.equal(await stormX.balanceOf(user), 95);
+    assert.equal(await stormX.balanceOf(receiver), 5);
+ 
+    // assert proper unlocked balance
+    assert.equal(await stormX.unlockedBalanceOf(receiver), 5);
+    assert.equal(await stormX.unlockedBalanceOf(receiver), 5);
+  });
+
+  it("transferFrom reverts if not enough unlocked token test", async function() {
+    // no locked tokens initially
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    
+    // lock certain amount of tokens
+    await stormX.lock(90, {from: user});
+ 
+    // assert unlocked token balance
+    assert.equal(await stormX.unlockedBalanceOf(user), 10);
+
+    await stormX.approve(user, 100, {from: user});
+    await Utils.assertTxFail(stormX.transferFrom(user, receiver, 100, {from: user}));
+
+    assert.equal(await stormX.balanceOf(user), 100);
+  });
+
+  it("transferFrom success test", async function() {
+    // no locked tokens initially
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    
+    // lock certain amount of tokens
+    await stormX.lock(90, {from: user});
+ 
+    // assert unlocked token balance
+    assert.equal(await stormX.unlockedBalanceOf(user), 10);
+    await stormX.approve(user, 100, {from: user});
+    await stormX.transferFrom(user, receiver, 5, {from: user});
+
+    // assert proper total balance
+    assert.equal(await stormX.balanceOf(user), 95);
+    assert.equal(await stormX.balanceOf(receiver), 5);
+ 
+    // assert proper unlocked balance
+    assert.equal(await stormX.unlockedBalanceOf(receiver), 5);
+    assert.equal(await stormX.unlockedBalanceOf(receiver), 5);
+  });
+
+  it("lock reverts if no enough unlocked token test", async function() {
+    // no locked tokens initially
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    assert.equal(await stormX.unlockedBalanceOf(user), 100);
+    
+    // locked amount exceeds unlocked balance of user
+    await Utils.assertTxFail(stormX.lock(101, {from: user}));
+ 
+    // assert proper balance
+    assert.equal(await stormX.unlockedBalanceOf(user), 100);
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    assert.equal(await stormX.balanceOf(user), 100);
+  });
+
+  it("lock success test", async function() {
+    // no locked tokens initially
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    assert.equal(await stormX.unlockedBalanceOf(user), 100);
+    
+    // lock certain amount of tokens for user
+    await stormX.lock(100, {from: user});
+
+    // token manipulation fails since all tokens are locked
+    await Utils.assertTxFail(stormX.transfer(receiver, 10, {from: user}));
+ 
+    // assert proper balance
+    assert.equal(await stormX.unlockedBalanceOf(user), 0);
+    assert.equal(await stormX.lockedBalanceOf(user), 100);
+    assert.equal(await stormX.balanceOf(user), 100);
+  });
+
+  it("unlock reverts if no enough locked token test", async function() {
+    // no locked tokens initially
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    assert.equal(await stormX.unlockedBalanceOf(user), 100);
+    
+    // locked amount exceeds unlocked balance of user
+    await Utils.assertTxFail(stormX.unlock(1, {from: user}));
+ 
+    // assert proper balance
+    assert.equal(await stormX.unlockedBalanceOf(user), 100);
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    assert.equal(await stormX.balanceOf(user), 100);
+  });
+
+  it("unlock success test", async function() {
+    // no locked tokens initially
+    assert.equal(await stormX.lockedBalanceOf(user), 0);
+    assert.equal(await stormX.unlockedBalanceOf(user), 100);
+    
+    // lock certain amount of tokens for user
+    await stormX.lock(100, {from: user});
+    // token manipulation fails since all tokens are locked
+    await Utils.assertTxFail(stormX.transfer(receiver, 10, {from: user}));
+    // unlock certain amount of tokens for token manipulation
+    await stormX.unlock(20, {from: user});
+    await stormX.transfer(receiver, 15, {from: user});
+ 
+    // assert proper balance of user
+    assert.equal(await stormX.unlockedBalanceOf(user), 5);
+    assert.equal(await stormX.lockedBalanceOf(user), 80);
+    assert.equal(await stormX.balanceOf(user), 85);
+
+    // receiver receives the tokens
+    assert.equal(await stormX.unlockedBalanceOf(receiver), 15);
+    assert.equal(await stormX.lockedBalanceOf(receiver), 0);
+    assert.equal(await stormX.balanceOf(receiver), 15);
   });
 });

@@ -12,6 +12,8 @@ const stormXContract = Constants.STORMX_CONTRACT;
 
 contract("StormX token GSN test", async function(accounts) {
   const user = accounts[2];
+  const swapAddress = accounts[3];
+  const reserve = accounts[4];
 
   let Recipient;
   let gsnDevProvider;
@@ -34,7 +36,7 @@ contract("StormX token GSN test", async function(accounts) {
 
     // deploy stormx contract as recipient
     Recipient = new this.web3.eth.Contract(stormXContract.abi, null, { data: stormXContract.bytecode });
-    this.recipient = await Recipient.deploy().send({ from: this.accounts[0], gas: 3000000 });
+    this.recipient = await Recipient.deploy({arguments: [swapAddress, reserve]}).send({ from: this.accounts[0], gas: 4000000 });
 
     // Fund and register the recipient in the hub
     await fundRecipient(this.web3, { recipient: this.recipient.options.address});

@@ -107,7 +107,7 @@ contract StormXToken is
    */
   function lock(uint256 amount) public returns (bool) {
     address account = _msgSender();
-    require(unlockedBalanceOf(account) >= amount, "No enough unlocked tokens");
+    require(unlockedBalanceOf(account) >= amount, "Not enough unlocked tokens");
     lockedBalanceOf[account] = lockedBalanceOf[account].add(amount);
     emit TokenLocked(account, amount);
     return true;
@@ -121,7 +121,7 @@ contract StormXToken is
    */
   function unlock(uint256 amount) public returns (bool) {
     address account = _msgSender();
-    require(lockedBalanceOf[account] >= amount, "No enough locked tokens");
+    require(lockedBalanceOf[account] >= amount, "Not enough locked tokens");
     lockedBalanceOf[account] = lockedBalanceOf[account].sub(amount);
     emit TokenUnlocked(account, amount);
     return true;
@@ -136,7 +136,7 @@ contract StormXToken is
    * @return success status of the transferring
    */
   function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
-    require(unlockedBalanceOf(sender) >= amount, "No enough unlocked token balance of sender");
+    require(unlockedBalanceOf(sender) >= amount, "Not enough unlocked token balance of sender");
     return super.transferFrom(sender, recipient, amount);
   }
 
@@ -148,7 +148,7 @@ contract StormXToken is
    * @return success status of the transferring
    */
   function transfer(address recipient, uint256 amount) public returns (bool) {
-    require(unlockedBalanceOf(_msgSender()) >= amount, "No enough unlocked token balance");
+    require(unlockedBalanceOf(_msgSender()) >= amount, "Not enough unlocked token balance");
     return super.transfer(recipient, amount);
   }
 

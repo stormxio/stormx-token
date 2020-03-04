@@ -146,6 +146,9 @@ contract("StormX token test", async function(accounts) {
     await stormX.approve(user, 100, {from: user});
     await stormX.transferFrom(user, receiver, 5, {from: user});
 
+    // assert that transferFrom only succeeds if sender is spender
+    await Utils.assertTxFail(stormX.transferFrom(user, receiver, 5, {from: accounts[6]}));
+    
     // assert proper total balance
     assert.equal(await stormX.balanceOf(user), 95);
     assert.equal(await stormX.balanceOf(receiver), 5);

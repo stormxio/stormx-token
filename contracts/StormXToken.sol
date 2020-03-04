@@ -4,19 +4,29 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Mintable.sol";
 import "@openzeppelin/contracts/GSN/GSNRecipient.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract StormXToken is 
+contract StormXToken is          
   ERC20Mintable, 
   ERC20Detailed("Storm Token", "STORM", 18), 
   Ownable, 
-  GSNRecipient {   
+  GSNRecipient {    
+
+  using SafeMath for uint256;
+
   string public standard;
 
   // Variables and constants for supporting GSN
   uint256 constant NO_ENOUGH_BALANCE = 11;
   uint256 public chargeFee;
   address public stormXReserve; 
+
+  // Variables for staking feature
+  mapping(address => uint256) public lockedBalanceOf;
+
+  event TokenLocked(address indexed account, uint256 amount);
+  event TokenUnlocked(address indexed account, uint256 amount);
 
   // Testing that GSN is supported properly 
   event Test(string funcName, address indexed sender, bytes data);
@@ -76,6 +86,70 @@ contract StormXToken is
     stormXReserve = newReserve;
     emit StormXReserveSet(newReserve);
     return true;
+  }
+
+  /**
+   * @param account address of the user this function queries unlocked balance for
+   * @return the amount of unlocked tokens of the given address
+   *         i.e. the amount of manipulable tokens of the given address
+   */
+  function unlockedBalanceOf(address account) public view returns (uint256) {
+    return balanceOf(account).sub(lockedBalanceOf[account]);
+  }
+
+  /**
+   * @dev Locks specified amount of tokens for the user
+   *      Locked tokens are not manipulable until being unlocked
+   *      Locked tokens are still reported as owned by the user 
+   *      when ``balanceOf()`` is called
+   * @param amount specified amount of tokens to be locked
+   * @return success status of the locking 
+   */
+  function lock(uint256 amount) public returns (bool) {
+    address account = _msgSender();
+    require(unlockedBalanceOf(account) >= amount, "Not enough unlocked tokens");
+    lockedBalanceOf[account] = lockedBalanceOf[account].add(amount);
+    emit TokenLocked(account, amount);
+    return true;
+  }
+
+  /**
+   * @dev Unlocks specified amount of tokens for the user
+   *      Unlocked tokens are manipulable until being locked
+   * @param amount specified amount of tokens to be unlocked
+   * @return success status of the unlocking 
+   */
+  function unlock(uint256 amount) public returns (bool) {
+    address account = _msgSender();
+    require(lockedBalanceOf[account] >= amount, "Not enough locked tokens");
+    lockedBalanceOf[account] = lockedBalanceOf[account].sub(amount);
+    emit TokenUnlocked(account, amount);
+    return true;
+  }
+
+  /**
+   * @dev The only difference from standard ERC20 ``transferFrom()`` is that
+   *     it only succeeds if the sender has enough unlocked tokens
+   * @param sender address of the sender
+   * @param recipient address of the recipient
+   * @param amount specified amount of tokens to be transferred
+   * @return success status of the transferring
+   */
+  function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
+    require(unlockedBalanceOf(sender) >= amount, "Not enough unlocked token balance of sender");
+    return super.transferFrom(sender, recipient, amount);
+  }
+
+  /**
+   * @dev The only difference from standard ERC20 ``transfer()`` is that
+   *     it only succeeds if the user has enough unlocked tokens
+   * @param recipient address of the recipient
+   * @param amount specified amount of tokens to be transferred
+   * @return success status of the transferring
+   */
+  function transfer(address recipient, uint256 amount) public returns (bool) {
+    require(unlockedBalanceOf(_msgSender()) >= amount, "Not enough unlocked token balance");
+    return super.transfer(recipient, amount);
   }
 
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {

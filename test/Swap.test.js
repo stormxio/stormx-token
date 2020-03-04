@@ -133,7 +133,7 @@ contract("StormX token swap test", async function(accounts) {
     // token swap is not available 
     await Utils.assertTxFail(testSwap.convert(50, {from: user}));
 
-    // opne token swap by initializing swap
+    // open token swap by initializing swap
     await testSwap.initialize(oldToken.address, stormX.address, {from: owner});
     assert.isTrue(await testSwap.migrationOpen());
     

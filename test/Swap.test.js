@@ -89,6 +89,9 @@ contract("StormX token swap test", async function(accounts) {
     assert.equal(await stormX.balanceOf(user), 0);
     assert.equal(await oldToken.balanceOf(user), 100);
 
+    // closing fails if the specified time period has not passed yet
+    await Utils.assertTxFail(swap.disableMigration(reserve, {from: owner}));
+
     // after some time period
     await Utils.timeout(11000);
     
@@ -113,7 +116,7 @@ contract("StormX token swap test", async function(accounts) {
 
   it("revert if invalid reserve address is provided in disableMigration test", async function() {
     await Utils.timeout(11000);
-    await Utils.assertTxFail(swap.disableMigration(Constants.ADDRESS_ZERO, {from: user}));
+    await Utils.assertTxFail(swap.disableMigration(Constants.ADDRESS_ZERO, {from: owner}));
   });
 
   it("revert if closing token migration when token swap is not open test", async function() {

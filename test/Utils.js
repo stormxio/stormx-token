@@ -1,4 +1,3 @@
-const web3 = require("web3");
 async function assertTxFail(promise, msg) {
   let txFailed = false;
   try {
@@ -22,7 +21,7 @@ async function assertTxFail(promise, msg) {
 
 const progressTime = (time) => {
   return new Promise((resolve, reject) => {
-    web3.currentProvider.send({
+    web3.currentProvider.send({ // eslint-disable-line no-undef
       jsonrpc: '2.0',
       method: 'evm_increaseTime',
       params: [time],

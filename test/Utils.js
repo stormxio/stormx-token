@@ -1,3 +1,4 @@
+const web3 = require("web3");
 async function assertTxFail(promise, msg) {
   let txFailed = false;
   try {
@@ -27,11 +28,13 @@ const progressTime = (time) => {
       params: [time],
       id: new Date().getTime()
     }, (err, result) => {
-      if (err) { return reject(err) }
-      return resolve(result)
-    })
-  })
-}
+      if (err) { 
+        return reject(err); 
+      }
+      return resolve(result);
+    });
+  });
+};
 
 module.exports = {
   assertTxFail,

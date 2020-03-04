@@ -15,10 +15,9 @@ contract Swap is Ownable {
   bool public migrationOpen;
   uint256 public initializeTime;
 
-  // Token migration should be open no shorter than the specified time period
-  // It should be set to 6 months as required before real deployment
-  // Current value is only set for testing
-  uint256 constant public MIGRATION_TIME = 10;
+  // Token migration should be open no shorter than 24 weeks,
+  // which is roughly 6 months
+  uint256 constant public MIGRATION_TIME = 24 weeks;
 
   event Initialized(address oldToken, address newToken);
   event MigrationOpen();

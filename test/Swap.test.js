@@ -10,6 +10,9 @@ contract("StormX token swap test", async function(accounts) {
   const user = accounts[1];
   const reserve = accounts[2];
 
+  // set migration time as 24 weeks as required
+  const migrationTime = 24 * 7 * 24 * 3600;
+
   let stormX;
   let oldToken;
   let swap;
@@ -69,8 +72,8 @@ contract("StormX token swap test", async function(accounts) {
   });
 
   it("token swap reverts when it is not available test", async function() {
-    // after some time period
-    await Utils.timeout(11000);
+    // advance time by 24 weeks
+    await Utils.progressTime(migrationTime);
     
     // non-owner fails to close token migration
     await swap.disableMigration(reserve, {from: owner});
@@ -92,8 +95,8 @@ contract("StormX token swap test", async function(accounts) {
     // closing fails if the specified time period has not passed yet
     await Utils.assertTxFail(swap.disableMigration(reserve, {from: owner}));
 
-    // after some time period
-    await Utils.timeout(11000);
+    // advance time by 24 weeks
+    await Utils.progressTime(migrationTime);
     
     // non-owner fails to close token migration
     await Utils.assertTxFail(swap.disableMigration(reserve, {from: user}));
@@ -115,7 +118,7 @@ contract("StormX token swap test", async function(accounts) {
   });
 
   it("revert if invalid reserve address is provided in disableMigration test", async function() {
-    await Utils.timeout(11000);
+    await Utils.progressTime(migrationTime);
     await Utils.assertTxFail(swap.disableMigration(Constants.ADDRESS_ZERO, {from: owner}));
   });
 
@@ -137,8 +140,8 @@ contract("StormX token swap test", async function(accounts) {
     await testSwap.initialize(oldToken.address, stormX.address, {from: owner});
     assert.isTrue(await testSwap.migrationOpen());
     
-    // after some time period
-    await Utils.timeout(11000);
+    // advance time by 24 weeks
+    await Utils.progressTime(migrationTime);
 
     // owner can close token swap 
     await testSwap.disableMigration(reserve, {from: owner});

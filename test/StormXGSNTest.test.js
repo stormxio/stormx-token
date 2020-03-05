@@ -10,10 +10,12 @@ const Constants = require("./Constants.js");
 const stormXContract = Constants.STORMX_CONTRACT;
 
 
-contract("StormX token GSN test", async function(accounts) {
+contract.only("StormX token GSN test", async function(accounts) {
   const user = accounts[2];
   const swapAddress = accounts[3];
   const reserve = accounts[4];
+
+  const chargeFee = 10;
 
   let Recipient;
   let gsnDevProvider;
@@ -23,13 +25,13 @@ contract("StormX token GSN test", async function(accounts) {
     // using port 8555 to pass travis CI check and test-cov
     // if run ganache locally, should set the port to 8555
     // instead of using port 8545
-    this.web3 = new Web3("http://localhost:8555");
+    this.web3 = new Web3("http://localhost:8545");
     this.accounts = await this.web3.eth.getAccounts();
 
     await deployRelayHub(this.web3);
     await runRelayer(this.web3, { quiet: true});
 
-    gsnDevProvider = new GSNDevProvider("http://localhost:8555", {
+    gsnDevProvider = new GSNDevProvider("http://localhost:8545", {
       ownerAddress: this.accounts[0],
       relayerAddress: this.accounts[1]
     });
@@ -43,10 +45,13 @@ contract("StormX token GSN test", async function(accounts) {
 
     // Set provider for the recipient
     this.recipient.setProvider(gsnDevProvider);
+
+    // mint some new tokens for testing
+    await this.recipient.methods.mint(user, 100).send({from: this.accounts[0], useGSN: false});
   });
 
 
-  it("basic GSN test", async function() {
+  it("basic GSN success test", async function() {
     // _msgSender() of "_preRelayedCall" and "_postRelayedCall" are zero address as expected
     // since these two functions are called by relayHub
     // _msgData() is tesed by openzeppelin and not explicitly tested here
@@ -66,6 +71,10 @@ contract("StormX token GSN test", async function(accounts) {
         assert.equal(event3.sender, Constants.ADDRESS_ZERO);
       }
     ); 
+
+    // assert user is charged
+    assert.equal(await stormx.balanceOf(user), 90);
+    assert.equal(await stormx.balanceOf(reserve), 10);
   });
 
   // // todo(Eeeva1227) SX-10: add logic for supporting GSN testing

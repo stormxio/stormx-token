@@ -18,7 +18,7 @@ contract StormXToken is
   string public standard;
 
   // Variables and constants for supporting GSN
-  uint256 constant NO_ENOUGH_BALANCE = 11;
+  uint256 constant INSUFFICIENT_BALANCE = 11;
   uint256 public chargeFee;
   address public stormXReserve; 
 
@@ -61,15 +61,11 @@ contract StormXToken is
     external
     view
     returns (uint256, bytes memory) {
-
-      // todo(Eeeva1227) SX-10: add logic for supporting GSN
-      // if (balanceOf(from) < chargeFee) {
-      //   return _rejectRelayedCall(NO_ENOUGH_BALANCE);
-      // } else {
-      //   return _approveRelayedCall();
-      // }
-      
-      return _approveRelayedCall();
+      if (balanceOf(from) < chargeFee) {
+        return _rejectRelayedCall(INSUFFICIENT_BALANCE);
+      } else {
+        return _approveRelayedCall(abi.encode(from));
+      }
     }
 
   function test() public {
@@ -153,6 +149,10 @@ contract StormXToken is
   }
 
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {
+    address user = abi.decode(context, (address));
+    
+    // charge the user with specified amount of fee
+    _transfer(user, stormXReserve, chargeFee);
     emit Test("_preRelayedCall", _msgSender(), _msgData());
   }
 
@@ -163,5 +163,7 @@ contract StormXToken is
     bytes32 preRetVal
   ) internal {
     emit Test("_postRelayedCall", _msgSender(), _msgData());
+   
+    
   }
 }

@@ -9,6 +9,7 @@ contract("StormX token swap test", async function(accounts) {
   const owner = accounts[0];
   const user = accounts[1];
   const reserve = accounts[2];
+  const newOwner = accounts[3];
 
   // set migration time as 24 weeks as required
   const migrationTime = 24 * 7 * 24 * 3600;
@@ -66,6 +67,42 @@ contract("StormX token swap test", async function(accounts) {
     assert.equal(await testSwap.newToken(), stormX.address);  
     assert.isTrue(await testSwap.migrationOpen());
   });
+  
+  it("revert if transferring ownership before becoming the owner test", async function() {
+    let testSwap = await Swap.new({from: owner});
+
+    // test swap is not the owner yet
+    assert.notEqual(await oldToken.owner(), testSwap.address);
+    await Utils.assertTxFail(testSwap.transferOldTokenOwnership(newOwner, {from: owner}));
+  });
+
+  it("revert if transferring ownership not called by owner test", async function() {
+    let testSwap = await Swap.new({from: owner});
+    oldToken = await OldToken.new(owner, {from: owner});
+    await oldToken.transferOwnership(testSwap.address, {from: owner});
+    await testSwap.initialize(oldToken.address, stormX.address, {from: owner});
+
+    // test swap becomes the owner
+    assert.equal(await oldToken.owner(), testSwap.address);
+    await Utils.assertTxFail(testSwap.transferOldTokenOwnership(newOwner, {from: user}));
+  });
+
+  it("swap contract owner transfers ownership success test", async function() {
+    let testSwap = await Swap.new({from: owner});
+    oldToken = await OldToken.new(owner, {from: owner});
+    await oldToken.transferOwnership(testSwap.address, {from: owner});
+    await testSwap.initialize(oldToken.address, stormX.address, {from: owner});
+
+    assert.equal(await oldToken.owner(), testSwap.address);
+    await testSwap.transferOldTokenOwnership(newOwner, {from: owner});
+
+    // test swap still holds the ownership
+    assert.equal(await oldToken.owner(), testSwap.address);
+    // the new owner has to accept the owernship
+    await oldToken.acceptOwnership({from: newOwner});
+    assert.equal(await oldToken.owner(), newOwner);
+  });
+
 
   it("revert if not enough balance in token swap test", async function() {
     await Utils.assertTxFail(swap.convert(1000, {from: user}));

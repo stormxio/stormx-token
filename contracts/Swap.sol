@@ -28,7 +28,7 @@ contract Swap is Ownable {
   modifier canMigrate() {
     require(migrationOpen, "Token Migration not available");
     _;
-  }   
+  }
 
   constructor() public {      
   }
@@ -56,6 +56,18 @@ contract Swap is Ownable {
 
     initialized = true;
     emit Initialized(_oldToken, _newToken);
+  }
+
+  /**
+   * @dev Transfers the ownership of the old token to a new owner
+   *      Reverts if current contract is not the owner yet
+   *      Note: after this function is invoked, ``newOwner`` has to
+   *      accept the ownership to become the actual owner by calling
+   *      ``acceptOwnership()`` of the old token contract  
+   * @param newOwner the expected new owner of the old token contract
+   */
+  function transferOldTokenOwnership(address newOwner) public onlyOwner {
+    oldToken.transferOwnership(newOwner);
   }
 
   /**

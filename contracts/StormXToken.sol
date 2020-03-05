@@ -172,7 +172,7 @@ contract StormXToken is
   ) public transfersAllowed returns (bool) {
     require(recipients.length == values.length, "Input lengths do not match");
     
-    for (uint256 i; i < recipients.length; i++) {
+    for (uint256 i = 0; i < recipients.length; i++) {
       transfer(recipients[i], values[i]);
     }
     return true;

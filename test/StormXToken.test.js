@@ -230,7 +230,7 @@ contract("StormX token test", async function(accounts) {
   it("revert if input lengths do not match in transfers test", async function() {
     let recipients = [receiver, receiver];
     let values = [1];
-    await Utils.assertTxFail(stormX.transfers(recipients, values));
+    await Utils.assertTxFail(stormX.transfers(recipients, values, {from: user}));
   });
 
   it("revert if transfers not available test", async function() {
@@ -284,6 +284,4 @@ contract("StormX token test", async function(accounts) {
     assert.equal(await stormX.balanceOf(user), 96);
     assert.equal(await stormX.balanceOf(receiver), 4);
   });
-
-
 });

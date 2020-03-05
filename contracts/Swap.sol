@@ -61,7 +61,7 @@ contract Swap is Ownable {
   /**
    * @dev Transfers the ownership of the old token to a new owner
    *      Reverts if current contract is not the owner yet
-   *      Note: after invoking this function, ``newOwner`` has to
+   *      Note: after this function is invoked, ``newOwner`` has to
    *      accept the ownership to become the actual owner by calling
    *      ``acceptOwnership()`` of the old token contract  
    * @param newOwner the expected new owner of the old token contract

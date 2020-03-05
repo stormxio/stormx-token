@@ -226,4 +226,64 @@ contract("StormX token test", async function(accounts) {
     assert.equal(await stormX.lockedBalanceOf(receiver), 0);
     assert.equal(await stormX.balanceOf(receiver), 15);
   });
+
+  it("revert if input lengths do not match in transfers test", async function() {
+    let recipients = [receiver, receiver];
+    let values = [1];
+    await Utils.assertTxFail(stormX.transfers(recipients, values));
+  });
+
+  it("revert if transfers not available test", async function() {
+    let recipients = [receiver, receiver];
+    let values = [1, 1];
+    await stormX.enableTransfers(false, {from: owner});
+    await Utils.assertTxFail(stormX.transfers(recipients, values, {from: user}));
+  });
+
+  it("revert if any transfer fails test", async function() {
+    let recipients = [receiver, receiver];
+    let values = [1000, 1];
+    await Utils.assertTxFail(stormX.transfers(recipients, values, {from: user}));
+  });
+
+  it("transfers success test", async function() {
+    let recipients = [receiver, receiver, owner];
+    let values = [1, 1, 1];
+
+    await stormX.transfers(recipients, values, {from: user});
+    assert.equal(await stormX.balanceOf(user), 97);
+    assert.equal(await stormX.balanceOf(receiver), 2);
+    assert.equal(await stormX.balanceOf(owner), 1);
+  });
+
+  it("owner and only owner can enable/disable transfers test", async function() {
+    let recipients = [receiver, receiver];
+    let values = [1, 1];
+
+    // non-owner fails to disable transfers
+    await Utils.assertTxFail(stormX.enableTransfers(false, {from: user}));
+    await stormX.transfers(recipients, values, {from: user});
+    assert.equal(await stormX.balanceOf(user), 98);
+    assert.equal(await stormX.balanceOf(receiver), 2);
+
+    // owner can disable transfers
+    await stormX.enableTransfers(false, {from: owner});
+    await Utils.assertTxFail(stormX.transfers(recipients, values, {from: user}));
+    assert.equal(await stormX.balanceOf(user), 98);
+    assert.equal(await stormX.balanceOf(receiver), 2);
+
+    // non-owner fails to enable transfers
+    await Utils.assertTxFail(stormX.enableTransfers(true, {from: user}));
+    await Utils.assertTxFail(stormX.transfers(recipients, values, {from: user}));
+    assert.equal(await stormX.balanceOf(user), 98);
+    assert.equal(await stormX.balanceOf(receiver), 2);
+
+    // owner can enable transfers
+    await stormX.enableTransfers(true, {from: owner});
+    await stormX.transfers(recipients, values, {from: user});
+    assert.equal(await stormX.balanceOf(user), 96);
+    assert.equal(await stormX.balanceOf(receiver), 4);
+  });
+
+
 });

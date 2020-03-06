@@ -16,6 +16,7 @@ contract StormXToken is
   using SafeMath for uint256;
 
   string public standard;
+  bool public transfersEnabled;
 
   // Variables and constants for supporting GSN
   uint256 constant NO_ENOUGH_BALANCE = 11;
@@ -27,10 +28,16 @@ contract StormXToken is
 
   event TokenLocked(address indexed account, uint256 amount);
   event TokenUnlocked(address indexed account, uint256 amount);
+  event TransfersEnabled(bool newStatus);
 
   // Testing that GSN is supported properly 
   event Test(string funcName, address indexed sender, bytes data);
   event StormXReserveSet(address newAddress);
+
+  modifier transfersAllowed {
+    require(transfersEnabled, "Transfers not available");
+    _;
+  }
   
   /**
    * @param swapAddress address of the deployed swap contract
@@ -45,6 +52,7 @@ contract StormXToken is
     stormXReserve = reserve;
     standard = "Storm Token v2.0";
     chargeFee = 10;
+    transfersEnabled = true;
   }
 
   function acceptRelayedCall(
@@ -150,6 +158,34 @@ contract StormXToken is
   function transfer(address recipient, uint256 amount) public returns (bool) {
     require(unlockedBalanceOf(_msgSender()) >= amount, "Not enough unlocked token balance");
     return super.transfer(recipient, amount);
+  }
+
+  /**
+   * @dev Transfers tokens in batch
+   * @param recipients an array of address of the recipient
+   * @param values an array of specified amount of tokens to be transferred
+   * @return success status of the batch transferring
+   */
+  function transfers(
+    address[] memory recipients, 
+    uint256[] memory values
+  ) public transfersAllowed returns (bool) {
+    require(recipients.length == values.length, "Input lengths do not match");
+    
+    for (uint256 i = 0; i < recipients.length; i++) {
+      transfer(recipients[i], values[i]);
+    }
+    return true;
+  }
+
+  /**
+   * @dev Enables the method ``transfers()`` if ``enable=true``, 
+   * and disables ``transfers()`` otherwise
+   * @param enable the expected new availability of the method ``transfers()``
+   */
+  function enableTransfers(bool enable) public onlyOwner returns (bool) {
+    transfersEnabled = enable;
+    emit TransfersEnabled(enable);
   }
 
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {

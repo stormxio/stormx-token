@@ -17,7 +17,6 @@ contract("Token swap GSN test", async function(accounts) {
   // 24 weeks of forced token migration open time
   const migrationTime = 24 * 7 * 24 *3600;
   let owner = accounts[0];
-  let swapOwner = accounts[1];
   let user = accounts[2];
   let reserve = accounts[4];
 
@@ -51,7 +50,7 @@ contract("Token swap GSN test", async function(accounts) {
     // mint some old tokens for token swap
     await oldToken.mintTokens(user, 100, {from: owner});
 
-    this.recipient = await Recipient.deploy({arguments: [oldToken.address, newToken.address, reserve]}).send({ from: swapOwner, gas: 0xfffffffff });
+    this.recipient = await Recipient.deploy({arguments: [oldToken.address, newToken.address, reserve]}).send({ from: owner, gas: 0xfffffffff });
     
     // Fund and register the recipient in the hub
     await fundRecipient(this.web3, { recipient: this.recipient.options.address});

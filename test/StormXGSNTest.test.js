@@ -21,9 +21,6 @@ contract("StormX token GSN test", async function(accounts) {
   
   // Set up the testing environment using javascript
   beforeEach(async function () { 
-    // using port 8555 to pass travis CI check and test-cov
-    // if run ganache locally, should set the port to 8545
-    // instead of using port 8555
     this.web3 = new Web3("http://localhost:8545");
     this.accounts = await this.web3.eth.getAccounts();
 

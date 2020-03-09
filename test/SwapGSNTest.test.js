@@ -28,11 +28,6 @@ contract("Token swap GSN test", async function(accounts) {
   
   // Set up the testing environment using javascript
   beforeEach(async function () { 
-    // if (process.env.RUNNING_COVERAGE) {
-    //   this.web3 = new Web3(ganache.provider({default_balance_ether: 1000000, gasLimit: 0xffffffffff}));
-    // } else {
-    //   this.web3 = new Web3(provider);
-    // }
     this.web3 = new Web3(provider);
     this.accounts = await this.web3.eth.getAccounts();
     // owner = this.accounts[0];

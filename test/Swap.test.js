@@ -20,45 +20,39 @@ contract("StormX token swap test", async function(accounts) {
 
   beforeEach(async function(){
     oldToken = await OldToken.new(owner, {from: owner});
-    swap = await Swap.new({from:owner});
-    stormX = await StormX.new(swap.address, reserve, {from:owner});
-
+    stormX = await StormX.new(reserve, {from:owner});
+    swap = await Swap.new(oldToken.address, stormX.address, reserve, {from:owner});
+    await stormX.addMinter(swap.address);
+    
     // transfer the ownership to contract swap and initialize it
     await oldToken.transferOwnership(swap.address, {from: owner});
-    await swap.initialize(oldToken.address, stormX.address, {from: owner});
+    await swap.initialize({from: owner});
     assert.equal(await oldToken.owner(), swap.address);
 
     // mint some old tokens for testing
     await oldToken.mintTokens(user, 100, {from: owner});
   });
 
-  it("revert if non-owner calls initialize test", async function() {
-    let testSwap = await Swap.new({from: owner});
-    await Utils.assertTxFail(testSwap.initialize(oldToken.address, stormX.address, {from: user}));
-  });
-
-  it("revert if invalid parameters passed to initialize test", async function() {
-    let testSwap = await Swap.new({from: owner});
-    oldToken = await OldToken.new(owner, {from: owner});
-    await oldToken.transferOwnership(testSwap.address, {from: owner});
-    await Utils.assertTxFail(testSwap.initialize(Constants.ADDRESS_ZERO, stormX.address, {from: owner}));
-    await Utils.assertTxFail(testSwap.initialize(oldToken.address, Constants.ADDRESS_ZERO, {from: owner}));
+  it("revert if invalid parameters provided in constructor test", async function() {
+    await Utils.assertTxFail(Swap.new(Constants.ADDRESS_ZERO, stormX.address, reserve));
+    await Utils.assertTxFail(Swap.new(oldToken.address, Constants.ADDRESS_ZERO, reserve));
+    await Utils.assertTxFail(Swap.new(oldToken.address, stormX.address, Constants.ADDRESS_ZERO));
   });
 
   it("revert if initialize twice test", async function() {
-    await Utils.assertTxFail(swap.initialize(oldToken.address, stormX.address, {from: owner}));
+    await Utils.assertTxFail(swap.initialize({from: owner}));
   });
 
   it("revert if ownership is not transferred before initialize test", async function() {
-    let testSwap = await Swap.new({from: owner});
-    await Utils.assertTxFail(testSwap.initialize(oldToken.address, stormX.address, {from: owner}));
+    let testSwap = await Swap.new(oldToken.address, stormX.address, reserve, {from: owner});
+    await Utils.assertTxFail(testSwap.initialize({from: owner}));
   });
 
   it("initialize success test", async function() {
-    let testSwap = await Swap.new({from: owner});
     oldToken = await OldToken.new(owner, {from: owner});
+    let testSwap = await Swap.new(oldToken.address, stormX.address, reserve, {from: owner});
     await oldToken.transferOwnership(testSwap.address, {from: owner});
-    await testSwap.initialize(oldToken.address, stormX.address, {from: owner});
+    await testSwap.initialize({from: owner});
 
     // assert fields are initialized properly
     // and swap contract holds the ownership of the old token
@@ -68,8 +62,8 @@ contract("StormX token swap test", async function(accounts) {
     assert.isTrue(await testSwap.migrationOpen());
   });
   
-  it("revert if transferring ownership before becoming the owner test", async function() {
-    let testSwap = await Swap.new({from: owner});
+  it("revert if transferring ownership without holding the ownership test", async function() {
+    let testSwap = await Swap.new(oldToken.address, stormX.address, reserve, {from: owner});
 
     // test swap is not the owner yet
     assert.notEqual(await oldToken.owner(), testSwap.address);
@@ -77,10 +71,10 @@ contract("StormX token swap test", async function(accounts) {
   });
 
   it("revert if transferring ownership not called by owner test", async function() {
-    let testSwap = await Swap.new({from: owner});
     oldToken = await OldToken.new(owner, {from: owner});
+    let testSwap = await Swap.new(oldToken.address, stormX.address, reserve, {from: owner});
     await oldToken.transferOwnership(testSwap.address, {from: owner});
-    await testSwap.initialize(oldToken.address, stormX.address, {from: owner});
+    await testSwap.initialize({from: owner});
 
     // test swap becomes the owner
     assert.equal(await oldToken.owner(), testSwap.address);
@@ -88,17 +82,17 @@ contract("StormX token swap test", async function(accounts) {
   });
 
   it("swap contract owner transfers ownership success test", async function() {
-    let testSwap = await Swap.new({from: owner});
     oldToken = await OldToken.new(owner, {from: owner});
+    let testSwap = await Swap.new(oldToken.address, stormX.address, reserve, {from: owner});
     await oldToken.transferOwnership(testSwap.address, {from: owner});
-    await testSwap.initialize(oldToken.address, stormX.address, {from: owner});
+    await testSwap.initialize({from: owner});
 
     assert.equal(await oldToken.owner(), testSwap.address);
     await testSwap.transferOldTokenOwnership(newOwner, {from: owner});
 
     // test swap still holds the ownership
     assert.equal(await oldToken.owner(), testSwap.address);
-    // the new owner has to accept the owernship
+    // the new owner has to accept the ownership
     await oldToken.acceptOwnership({from: newOwner});
     assert.equal(await oldToken.owner(), newOwner);
   });
@@ -160,9 +154,11 @@ contract("StormX token swap test", async function(accounts) {
   });
 
   it("revert if closing token migration when token swap is not open test", async function() {
-    let testSwap = await Swap.new({from: owner});
     oldToken = await OldToken.new(owner, {from: owner});
-    stormX = await StormX.new(testSwap.address, reserve, {from:owner});
+    stormX = await StormX.new(reserve, {from:owner});
+    let testSwap = await Swap.new(oldToken.address, stormX.address, reserve, {from: owner});
+    await stormX.addMinter(testSwap.address, {from: owner});
+
     await oldToken.mintTokens(user, 100, {from: owner});
     await oldToken.transferOwnership(testSwap.address, {from: owner});
     assert.equal(await stormX.totalSupply(), 0);
@@ -174,7 +170,7 @@ contract("StormX token swap test", async function(accounts) {
     await Utils.assertTxFail(testSwap.convert(50, {from: user}));
 
     // open token swap by initializing swap
-    await testSwap.initialize(oldToken.address, stormX.address, {from: owner});
+    await testSwap.initialize({from: owner});
     assert.isTrue(await testSwap.migrationOpen());
     
     // advance time by 24 weeks

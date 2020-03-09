@@ -1,11 +1,14 @@
 pragma solidity 0.5.16;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";  
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./StormXToken.sol";
-import "../mock/OldStormXToken.sol"; 
+import "./StormXGSNRecipient.sol";
+import "../mock/OldStormXToken.sol";
 
 
-contract Swap is Ownable {       
+contract Swap is StormXGSNRecipient {       
+
+  using SafeMath for uint256;
 
   StormToken public oldToken;
   StormXToken public newToken;
@@ -19,7 +22,7 @@ contract Swap is Ownable {
   // which is roughly 6 months
   uint256 constant public MIGRATION_TIME = 24 weeks;
 
-  event Initialized(address oldToken, address newToken);
+  event Initialized(uint256 initializeTime);
   event MigrationOpen();
   event MigrationClosed();
   event MigrationLeftoverTransferred(address stormXReserve, uint256 amount);
@@ -30,32 +33,33 @@ contract Swap is Ownable {
     _;
   }
 
-  constructor() public {      
+  constructor(
+    address _oldToken, 
+    address _newToken, 
+    address reserve
+  // solhint-disable-next-line visibility-modifier-order
+  ) StormXGSNRecipient(_newToken, reserve) public { 
+    require(_oldToken != address(0), "Invalid old token address");
+    oldToken = StormToken(_oldToken);
+    newToken = StormXToken(_newToken);
   }
 
   /**
-   * @dev Initializes the old token and the new token to interact with 
-   *      Accepts the ownership of the old token
+   * @dev Accepts the ownership of the old token and
+   *      opens the token migration
    *      Important: the ownership of the old token should be transferred
    *      to this contract before calling this function
-   * @param _oldToken address of the deployed old token
-   * @param _newToken address of the deployed new token
    */
-  function initialize(address _oldToken, address _newToken) public onlyOwner {
-    require(_oldToken != address(0), "Invalid old token address");
-    require(_newToken != address(0), "Invalid new token address");
+  function initialize() public {
     require(!initialized, "cannot initialize twice");
-    oldToken = StormToken(_oldToken);
-    newToken = StormXToken(_newToken);
     oldToken.acceptOwnership();
-
-    // open token migration when this contract is initialized
-    migrationOpen = true;
-    initializeTime = now;
-    emit MigrationOpen();
-
     initialized = true;
-    emit Initialized(_oldToken, _newToken);
+    initializeTime = now;
+    emit Initialized(initializeTime);
+
+    // open token migration when this contract is initialized successfully
+    migrationOpen = true;
+    emit MigrationOpen();
   }
 
   /**
@@ -76,9 +80,8 @@ contract Swap is Ownable {
    * @return success status of the conversion
    */
   function convert(uint256 amount) public canMigrate returns (bool) {
-    // todo(Eeeva1227) SX-10: add GSN logic since convert should support GSN 
-    address account = msg.sender;
-    require(oldToken.balanceOf(account) >= amount, "Not enough balance");
+    address account = _msgSender();
+    require(oldToken.balanceOf(_msgSender()) >= amount, "Not enough balance");
     
     // requires the ownership of original token contract
     oldToken.destroy(account, amount); 

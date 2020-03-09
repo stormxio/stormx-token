@@ -8,9 +8,9 @@
   },
   "scripts": {
     "coveralls-collect": "export RUNNING_COVERAGE=True && cat coverage/lcov.info | ./node_modules/.bin/coveralls",
-    "ganache": "ganache-cli --port 8545 --deterministic --accounts 10 -e 10000 -k istanbul -m 'curtain anchor bamboo hurt drink disagree gaze electric solar present rain joy'",
+    "ganache": "ganache-cli -l 0xffffffffffff --port 8545 --deterministic --accounts 10 -e 1000000 -k istanbul -m 'curtain anchor bamboo hurt drink disagree gaze electric solar present rain joy'",
     "test": "npx truffle build && npx truffle test",
-    "test-cov": "export RUNNING_COVERAGE=True && truffle run coverage",
+    "test-cov": "export RUNNING_COVERAGE=True && truffle run coverage --network development",
     "lint": "./node_modules/.bin/eslint ./test && ./node_modules/.bin/solhint contracts/*.sol",
     "lint-fix": "./node_modules/.bin/eslint --fix ./test"
   },

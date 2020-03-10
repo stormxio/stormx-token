@@ -16,7 +16,7 @@ contract StormXToken is
   string public standard;
   bool public transfersEnabled;
 
-  mapping(address => bool) public GSNRecipients;  // solhint-disable-line var-name-mixedcase
+  mapping(address => bool) public recipients;
 
   // Variables for staking feature
   mapping(address => uint256) public lockedBalanceOf;
@@ -42,7 +42,7 @@ contract StormXToken is
   constructor(address reserve) 
     // solhint-disable-next-line visibility-modifier-order
     StormXGSNRecipient(address(this), reserve) public { 
-      GSNRecipients[address(this)] = true;
+      recipients[address(this)] = true;
       emit GSNRecipientAdded(address(this));
       standard = "Storm Token v2.0";
       transfersEnabled = true;
@@ -54,7 +54,7 @@ contract StormXToken is
    * @return success status of the adding
    */
   function addGSNRecipient(address recipient) public onlyOwner returns (bool) {
-    GSNRecipients[recipient] = true;
+    recipients[recipient] = true;
     emit GSNRecipientAdded(recipient);
     return true;
   }
@@ -65,7 +65,7 @@ contract StormXToken is
    * @return success status of the deleting
    */
   function deleteGSNRecipient(address recipient) public onlyOwner returns (bool) {
-    GSNRecipients[recipient] = false;
+    recipients[recipient] = false;
     emit GSNRecipientDeleted(recipient);
     return true;
   }
@@ -124,11 +124,12 @@ contract StormXToken is
     // if the msg.sender is charging ``sender`` for a GSN fee
     // allownace does not apply
     // so that no user approval is required for GSN calls
-    if (GSNRecipients[_msgSender()] == true) {
+    if (recipients[_msgSender()] == true) {
       _transfer(sender, recipient, amount);
       return true;
+    } else {
+      return super.transferFrom(sender, recipient, amount);
     }
-    return super.transferFrom(sender, recipient, amount);
   }
 
   /**

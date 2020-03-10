@@ -2,26 +2,21 @@ pragma solidity 0.5.16;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Mintable.sol";
-import "@openzeppelin/contracts/GSN/GSNRecipient.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./StormXGSNRecipient.sol";
 
 
-contract StormXToken is          
+contract StormXToken is 
+  StormXGSNRecipient,         
   ERC20Mintable, 
-  ERC20Detailed("Storm Token", "STORM", 18), 
-  Ownable, 
-  GSNRecipient {    
+  ERC20Detailed("Storm Token", "STORM", 18) {    
 
   using SafeMath for uint256;
 
   string public standard;
   bool public transfersEnabled;
 
-  // Variables and constants for supporting GSN
-  uint256 constant NO_ENOUGH_BALANCE = 11;
-  uint256 public chargeFee;
-  address public stormXReserve; 
+  mapping(address => bool) public recipients;
 
   // Variables for staking feature
   mapping(address => uint256) public lockedBalanceOf;
@@ -31,8 +26,8 @@ contract StormXToken is
   event TransfersEnabled(bool newStatus);
 
   // Testing that GSN is supported properly 
-  event Test(string funcName, address indexed sender, bytes data);
-  event StormXReserveSet(address newAddress);
+  event GSNRecipientAdded(address recipient);
+  event GSNRecipientDeleted(address recipient);
 
   modifier transfersAllowed {
     require(transfersEnabled, "Transfers not available");
@@ -40,59 +35,38 @@ contract StormXToken is
   }
   
   /**
-   * @param swapAddress address of the deployed swap contract
    * @param reserve address of the StormX's reserve that receives
    * GSN charged fees and remaining tokens
    * after the token migration is closed
    */
-  constructor(address swapAddress, address reserve) public {
-    require(swapAddress != address(0), "Invalid swap address");
-    require(reserve != address(0), "Invalid reserve address");
-    addMinter(swapAddress);
-    stormXReserve = reserve;
-    standard = "Storm Token v2.0";
-    chargeFee = 10;
-    transfersEnabled = true;
-  }
-
-  function acceptRelayedCall(
-    address relay,
-    address from,
-    bytes calldata encodedFunction,
-    uint256 transactionFee,
-    uint256 gasPrice,
-    uint256 gasLimit,
-    uint256 nonce,
-    bytes calldata approvalData,
-    uint256 maxPossibleCharge
-  )
-    external
-    view
-    returns (uint256, bytes memory) {
-
-      // todo(Eeeva1227) SX-10: add logic for supporting GSN
-      // if (balanceOf(from) < chargeFee) {
-      //   return _rejectRelayedCall(NO_ENOUGH_BALANCE);
-      // } else {
-      //   return _approveRelayedCall();
-      // }
-      
-      return _approveRelayedCall();
+  constructor(address reserve) 
+    // solhint-disable-next-line visibility-modifier-order
+    StormXGSNRecipient(address(this), reserve) public { 
+      recipients[address(this)] = true;
+      emit GSNRecipientAdded(address(this));
+      standard = "Storm Token v2.0";
+      transfersEnabled = true;
     }
 
-  function test() public {
-    emit Test("Test", _msgSender(), _msgData());
+  /**
+   * @dev Adds GSN recipient that will charge users in this StormX token
+   * @param recipient address of the new recipient
+   * @return success status of the adding
+   */
+  function addGSNRecipient(address recipient) public onlyOwner returns (bool) {
+    recipients[recipient] = true;
+    emit GSNRecipientAdded(recipient);
+    return true;
   }
 
   /**
-   * @dev Sets the address of StormX's reserve
-   * @param newReserve the new address of StormX's reserve
-   * @return success status of the setting 
+   * @dev Deletes a GSN recipient from the list
+   * @param recipient address of the recipient to be deleted
+   * @return success status of the deleting
    */
-  function setStormXReserve(address newReserve) public onlyOwner returns (bool) {
-    require(newReserve != address(0), "Invalid reserve address");
-    stormXReserve = newReserve;
-    emit StormXReserveSet(newReserve);
+  function deleteGSNRecipient(address recipient) public onlyOwner returns (bool) {
+    recipients[recipient] = false;
+    emit GSNRecipientDeleted(recipient);
     return true;
   }
 
@@ -134,10 +108,12 @@ contract StormXToken is
     emit TokenUnlocked(account, amount);
     return true;
   }
-
+  
   /**
    * @dev The only difference from standard ERC20 ``transferFrom()`` is that
    *     it only succeeds if the sender has enough unlocked tokens
+   *     Note: this function is also used by every StormXGSNRecipient
+   *           when charging.
    * @param sender address of the sender
    * @param recipient address of the recipient
    * @param amount specified amount of tokens to be transferred
@@ -145,7 +121,15 @@ contract StormXToken is
    */
   function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
     require(unlockedBalanceOf(sender) >= amount, "Not enough unlocked token balance of sender");
-    return super.transferFrom(sender, recipient, amount);
+    // if the msg.sender is charging ``sender`` for a GSN fee
+    // allownace does not apply
+    // so that no user approval is required for GSN calls
+    if (recipients[_msgSender()] == true) {
+      _transfer(sender, recipient, amount);
+      return true;
+    } else {
+      return super.transferFrom(sender, recipient, amount);
+    }
   }
 
   /**
@@ -186,18 +170,5 @@ contract StormXToken is
   function enableTransfers(bool enable) public onlyOwner returns (bool) {
     transfersEnabled = enable;
     emit TransfersEnabled(enable);
-  }
-
-  function _preRelayedCall(bytes memory context) internal returns (bytes32) {
-    emit Test("_preRelayedCall", _msgSender(), _msgData());
-  }
-
-  function _postRelayedCall(
-    bytes memory context, 
-    bool success, 
-    uint256 actualCharge, 
-    bytes32 preRetVal
-  ) internal {
-    emit Test("_postRelayedCall", _msgSender(), _msgData());
   }
 }

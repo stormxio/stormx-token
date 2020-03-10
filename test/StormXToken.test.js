@@ -5,14 +5,13 @@ const Constants = require("./Constants.js");
 contract("StormX token test", async function(accounts) {
   const owner = accounts[0];
   const reserve = accounts[1];
-  const swapAddress = accounts[2];
   const user = accounts[3];
   const receiver = accounts[4];
 
   let stormX;
 
   beforeEach(async function(){
-    stormX = await StormX.new(swapAddress, reserve, {from: owner});
+    stormX = await StormX.new(reserve, {from: owner});
 
     // mint some stormX tokens for testing
     await stormX.mint(user, 100, {from: owner});
@@ -36,8 +35,7 @@ contract("StormX token test", async function(accounts) {
   });
 
   it("revert if invalid parameters provided in constructor test", async function() {
-    await Utils.assertTxFail(StormX.new(Constants.ADDRESS_ZERO, reserve));
-    await Utils.assertTxFail(StormX.new(swapAddress, Constants.ADDRESS_ZERO));
+    await Utils.assertTxFail(StormX.new(Constants.ADDRESS_ZERO));
   });
 
   it("owner and only owner can set stormX reserve", async function() {

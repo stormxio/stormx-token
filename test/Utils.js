@@ -10,6 +10,33 @@ async function assertTxFail(promise, msg) {
       ) ||
       err.message.startsWith(
         "Returned error: VM Exception while processing transaction: revert"
+      ) ||
+      err.message.startsWith(
+        "Error: Returned error: VM Exception while processing transaction: revert"
+      ) ||
+      err.message.startsWith(
+        "Transaction has been reverted by the EVM" 
+      ) ||
+      err.message.startsWith(
+        "Error: Returned error: execution error: revert" 
+      );
+    if (msg) {
+      // assert error message if specified
+      assert.isTrue(err.message.endsWith(msg));
+    }
+  }
+  assert.isTrue(txFailed, msg);
+}
+
+async function assertGSNFail(promise, msg) {
+  let txFailed = false;
+  try {
+    const result = await promise;
+    txFailed = parseInt(result.receipt.status) === 0;
+  } catch (err) {
+    txFailed =
+      err.message.startsWith(
+        "Error: Recipient canRelay call was rejected with error"
       );
     if (msg) {
       // assert error message if specified
@@ -37,5 +64,6 @@ const progressTime = (time) => {
 
 module.exports = {
   assertTxFail,
+  assertGSNFail,
   progressTime
 };

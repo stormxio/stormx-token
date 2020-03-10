@@ -189,7 +189,6 @@ contract("StormX GSN add/delete recipient test", async function(accounts) {
     assert.equal(await token.balanceOf(owner), 50);
   });
 
-
   it("GSN calls fails if stormx GSN recipient is not added as valid by stormx contract owner test", async function() {
     await Utils.assertTxFail(token.addGSNRecipient(this.recipient.options.address, {from: user}));
     await Utils.assertTxFail(this.recipient.methods.setChargeFee(15).send({from: owner}));

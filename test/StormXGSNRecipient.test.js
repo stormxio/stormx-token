@@ -13,6 +13,7 @@ const stormXGSNContract = Constants.STORMX_GSN_CONTRACT;
 
 
 contract("StormX GSN recipient test", async function(accounts) {
+  const provider = Constants.PROVIDER;
   const owner = accounts[0];
   const user = accounts[1];
   
@@ -22,10 +23,7 @@ contract("StormX GSN recipient test", async function(accounts) {
   let gsnDevProvider;
 
   beforeEach(async function (){
-    // using port 8555 to pass travis CI check and test-cov
-    // if run ganache locally, should set the port to 8555
-    // instead of using port 8545
-    this.web3 = new Web3("http://localhost:8555"); 
+    this.web3 = new Web3(provider); 
     this.accounts = await this.web3.eth.getAccounts();
 
     reserve = this.accounts[5];
@@ -33,7 +31,7 @@ contract("StormX GSN recipient test", async function(accounts) {
     await deployRelayHub(this.web3);
     await runRelayer(this.web3, { quiet: true});
 
-    gsnDevProvider = new GSNDevProvider("http://localhost:8555", {
+    gsnDevProvider = new GSNDevProvider(provider, {
       ownerAddress: this.accounts[0],
       relayerAddress: this.accounts[1]
     });
@@ -144,5 +142,90 @@ contract("StormX GSN recipient test", async function(accounts) {
     await Utils.assertTxFail(this.recipient.methods.setStormXReserve(newReserve).send({from: user, useGSN: false}));
     assert.equal(await token.balanceOf(user), 100);
     assert.equal(await this.recipient.methods.stormXReserve().call(), reserve);
+  });
+});
+
+contract("StormX GSN add/delete recipient test", async function(accounts) {
+  const provider = Constants.PROVIDER;
+  const owner = accounts[0];
+  const user = accounts[1];
+  
+  let token;
+  let reserve;
+  let Recipient;
+  let gsnDevProvider;
+
+  beforeEach(async function (){
+    this.web3 = new Web3(provider); 
+    this.accounts = await this.web3.eth.getAccounts();
+
+    reserve = this.accounts[5];
+
+    await deployRelayHub(this.web3);
+    await runRelayer(this.web3, { quiet: true});
+
+    gsnDevProvider = new GSNDevProvider(provider, {
+      ownerAddress: this.accounts[0],
+      relayerAddress: this.accounts[1]
+    });
+
+    token = await StormX.new(reserve, {from: owner});
+
+    // deploy stormx contract as recipient
+    Recipient = new this.web3.eth.Contract(stormXGSNContract.abi, null, { data: stormXGSNContract.bytecode });
+    this.recipient = await Recipient.deploy({arguments: [token.address, reserve]}).send({ from: owner, gas: 5000000 });
+
+    // Fund and register the recipient in the hub
+    await fundRecipient(this.web3, { recipient: this.recipient.options.address});
+
+    // Set provider for the recipient
+    this.recipient.setProvider(gsnDevProvider);
+
+    // mint some new tokens for testing
+    await token.mint(user, 100, {from: owner});
+    assert.equal(await token.balanceOf(user), 100);
+
+    await token.mint(owner, 50, {from: owner});
+    assert.equal(await token.balanceOf(owner), 50);
+  });
+
+  it("GSN calls fails if stormx GSN recipient is not added as valid by stormx contract owner test", async function() {
+    await Utils.assertTxFail(token.addGSNRecipient(this.recipient.options.address, {from: user}));
+    await Utils.assertTxFail(this.recipient.methods.setChargeFee(15).send({from: owner}));
+    
+    // add GSN recipients
+    await token.addGSNRecipient(this.recipient.options.address, {from: owner});
+
+    await this.recipient.methods.setChargeFee(15).send({from: owner});
+    
+    // GSN call succeeds and 10 tokens were charged
+    assert.equal(await token.balanceOf(owner), 40);
+    // reserve receives the charged fee
+    assert.equal(await token.balanceOf(reserve), 10);
+  });
+
+  it("GSN calls fails if valid stormx GSN recipient is deleted by stormx contract owner test", async function() {
+    await token.addGSNRecipient(this.recipient.options.address, {from: owner});
+    await Utils.assertTxFail(token.deleteGSNRecipient(this.recipient.options.address, {from: user}));
+
+    await this.recipient.methods.setChargeFee(15).send({from: owner});
+    
+    // GSN call succeeds and 10 tokens were charged
+    assert.equal(await token.balanceOf(owner), 40);
+    // reserve receives the charged fee
+    assert.equal(await token.balanceOf(reserve), 10);
+
+    await token.deleteGSNRecipient(this.recipient.options.address, {from: owner});
+    await Utils.assertTxFail(this.recipient.methods.setChargeFee(15).send({from: owner}));
+  });
+
+  it("GSN calls succeeds if invalid stormx GSN recipient gots approval from user test", async function() {
+    await token.approve(this.recipient.options.address, 10, {from: owner});
+
+    await this.recipient.methods.setChargeFee(15).send({from: owner});
+    // GSN call succeeds and 10 tokens were charged
+    assert.equal(await token.balanceOf(owner), 40);
+    // reserve receives the charged fee
+    assert.equal(await token.balanceOf(reserve), 10);
   });
 });

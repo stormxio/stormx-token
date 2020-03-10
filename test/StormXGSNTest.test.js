@@ -11,8 +11,10 @@ const stormXContract = Constants.STORMX_CONTRACT;
 
 
 contract("StormX token GSN test", async function(accounts) {
+  const provider = Constants.PROVIDER;
   const owner = accounts[0];
   const user = accounts[2];
+  const spender = accounts[3];
   const reserve = accounts[4];
   const receiver = accounts[5];
 
@@ -21,16 +23,13 @@ contract("StormX token GSN test", async function(accounts) {
   
   // Set up the testing environment using javascript
   beforeEach(async function () { 
-    // using port 8555 to pass travis CI check and test-cov
-    // if run ganache locally, should set the port to 8555
-    // instead of using port 8545
-    this.web3 = new Web3("http://localhost:8555"); 
+    this.web3 = new Web3(provider); 
     this.accounts = await this.web3.eth.getAccounts();
 
     await deployRelayHub(this.web3);
     await runRelayer(this.web3, { quiet: true});
 
-    gsnDevProvider = new GSNDevProvider("http://localhost:8555", {
+    gsnDevProvider = new GSNDevProvider(provider, {
       ownerAddress: this.accounts[0],
       relayerAddress: this.accounts[1]
     });
@@ -56,9 +55,8 @@ contract("StormX token GSN test", async function(accounts) {
     await Utils.assertGSNFail(this.recipient.methods.balanceOf(poorUser).send({from: poorUser}));
   });
 
-  // todo(Eeeva1227) SX-24: further research is needed to figure out 
-  //                        why there is a difference between case1 and case2
   // user is charged for a fee in this case
+  // since the function call is valid before charging and the call is accepted
   it("GSN transfer fails if not enough balance after being charged test -- case1", async function() {
     assert.equal(await this.recipient.methods.balanceOf(user).call(), 100);
 
@@ -73,6 +71,8 @@ contract("StormX token GSN test", async function(accounts) {
   });
 
   // user is not charged for a fee
+  // since as in current testing environment
+  // the function call is not valid and so not accepted
   it("GSN transfer fails if not enough balance after being charged test -- case2", async function() {
     assert.equal(await this.recipient.methods.balanceOf(user).call(), 100);
 
@@ -98,25 +98,95 @@ contract("StormX token GSN test", async function(accounts) {
     assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 10);
   });
 
-  it("owner and only owner can set GSN charge test", async function() {
-    // user invokes a GSN call
-    await this.recipient.methods.balanceOf(user).send({from: user});
+  it("GSN transferFrom fails if not enough balance test", async function() {
+    await this.recipient.methods.approve(spender, 1000).send({from: user});
+    await Utils.assertTxFail(this.recipient.methods.transferFrom(user, receiver, 130).send({from: spender}));
+  });
+
+  it("GSN transferFrom success only with enough allowance test", async function() {
+    await this.recipient.methods.mint(spender, 10).send({from: owner, useGSN: false});
+    await Utils.assertTxFail(this.recipient.methods.transferFrom(user, receiver, 10).send({from: spender}));
     
+    // user approves
+    await this.recipient.methods.approve(spender, 10).send({from: user});
+    await this.recipient.methods.transferFrom(user, receiver, 10).send({from: spender});
+
+    // 10 tokens were transferred and 10 tokens were charged, 80 tokens left
+    assert.equal(await this.recipient.methods.balanceOf(user).call(), 80);
+
+    // 10 tokens were transferred
+    assert.equal(await this.recipient.methods.balanceOf(receiver).call(), 10);
+
     // 10 tokens were charged
-    assert.equal(await this.recipient.methods.balanceOf(user).call(), 90);
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 20);
+  });
 
-    // owner successfully sets GSN charge fee with GSN call
-    await this.recipient.methods.mint(owner, 130).send({from: owner, useGSN: false});
-    await this.recipient.methods.setChargeFee(30).send({from: owner});
-    assert.equal(await this.recipient.methods.chargeFee().call(), 30);
+  it("GSN transfers success test", async function() {
+    let recipients = [receiver, receiver, spender];
+    let values = [1, 1, 8];
 
-    // owner successfully sets GSN charge fee directly
-    await this.recipient.methods.setChargeFee(20).send({from: owner, useGSN: false});
-    assert.equal(await this.recipient.methods.chargeFee().call(), 20);
+    await this.recipient.methods.transfers(recipients, values).send({from: user});
+    // 10 tokens were transferred and 10 tokens were charged, 80 tokens left
+    assert.equal(await this.recipient.methods.balanceOf(user).call(), 80);
 
-    // non-owner fails to set GSN charge fee
-    await Utils.assertTxFail(this.recipient.methods.setChargeFee(10).send({from: user}));
-    await Utils.assertTxFail(this.recipient.methods.setChargeFee(10).send({from: user, useGSN: false}));
-    assert.equal(await this.recipient.methods.chargeFee().call(), 20);
+    // 10 tokens were transferred
+    assert.equal(await this.recipient.methods.balanceOf(receiver).call(), 2);
+    assert.equal(await this.recipient.methods.balanceOf(spender).call(), 8);
+
+    // 10 tokens were charged
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 10);
+  });
+
+  it("GSN transfers fails if input lengths do not match in transfers test", async function() {
+    let recipients = [receiver, receiver];
+    let values = [1];
+    await Utils.assertTxFail(this.recipient.methods.transfers(recipients, values).send({from: user}));
+
+    // not charged
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 0);
+  });
+
+  it("GSN transfers fails if any transfer fails test", async function() {
+    let recipients = [receiver, receiver, spender];
+    let values = [1, 1000, 8];
+
+    await Utils.assertTxFail(this.recipient.methods.transfers(recipients, values).send({from: user}));
+
+    assert.equal(await this.recipient.methods.balanceOf(user).call(), 100);
+    assert.equal(await this.recipient.methods.balanceOf(receiver).call(), 0);
+    assert.equal(await this.recipient.methods.balanceOf(spender).call(), 0);
+
+    // not charged
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 0);
+  });
+
+  it("owner and only owner can enable/disable GSN transfers via GSN test", async function() {
+    let recipients = [receiver, receiver, spender];
+    let values = [1, 1, 8];
+
+    // user fails to disable transfers
+    await Utils.assertTxFail(this.recipient.methods.enableTransfers(false).send({from: user}));
+    await this.recipient.methods.transfers(recipients, values).send({from: user});
+    assert.equal(await this.recipient.methods.balanceOf(user).call(), 80);
+    assert.equal(await this.recipient.methods.balanceOf(receiver).call(), 2);
+    assert.equal(await this.recipient.methods.balanceOf(spender).call(), 8);
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 10);
+
+    // owner can disable transfers
+    await this.recipient.methods.mint(owner, 100).send({from: owner, useGSN: false});
+    await this.recipient.methods.enableTransfers(false).send({from: owner});
+    await Utils.assertTxFail(this.recipient.methods.transfers(recipients, values).send({from: user}));
+
+    assert.equal(await this.recipient.methods.balanceOf(user).call(), 80);
+    assert.equal(await this.recipient.methods.balanceOf(receiver).call(), 2);
+    assert.equal(await this.recipient.methods.balanceOf(spender).call(), 8);
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 20);
+
+    // user fails to enanble transfers
+    await Utils.assertTxFail(this.recipient.methods.enableTransfers(false).send({from: user}));
+    assert.isFalse(await this.recipient.methods.transfersEnabled().call());
+    // owner can enable transfers
+    await this.recipient.methods.enableTransfers(true).send({from: owner});
+    assert.isTrue(await this.recipient.methods.transfersEnabled().call());
   });
 });

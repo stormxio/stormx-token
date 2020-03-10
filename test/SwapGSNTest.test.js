@@ -11,12 +11,10 @@ const Utils = require("./Utils.js");
 const swapContract = Constants.SWAP_CONTRACT;
 const OldToken = artifacts.require("StormToken");
 const NewToken = artifacts.require("StormXToken");
-// using port 8555 to pass travis CI check and test-cov
-// if run ganache locally, should set the port to 8555
-// instead of using port 8545
-const provider = "http://localhost:8555";
+
 
 contract("Token swap GSN test", async function(accounts) {
+  const provider = Constants.PROVIDER;
   // 24 weeks of forced token migration open time
   const migrationTime = 24 * 7 * 24 *3600;
   let owner = accounts[0];

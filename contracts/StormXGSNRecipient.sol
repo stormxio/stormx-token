@@ -20,10 +20,6 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   event StormXReserveSet(address newAddress);
   event ChargeFeeSet(uint256 newFee);
 
-  // todo(Eeeva1227) SX-24: remove the test event
-  // after thorough tests are done
-  event Test();
-
   constructor(address tokenAddress, address reserve) public {
     require(tokenAddress != address(0), "Invalid token address");
     require(reserve != address(0), "Invalid reserve address");
@@ -78,7 +74,6 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   }
   
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {
-    emit Test();
     address user = abi.decode(context, (address));
   
     // charge the user with specified amount of fee
@@ -90,7 +85,5 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     bool success, 
     uint256 actualCharge, 
     bytes32 preRetVal
-  ) internal {
-    emit Test();
-  }
+  ) internal {}
 }

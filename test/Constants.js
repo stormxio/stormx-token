@@ -6,7 +6,7 @@ let STORMX_GSN_CONTRACT;
 
 
 if (process.env.RUNNING_COVERAGE) {
-  PROVIDER = "http://localhost:8555";
+  PROVIDER = "http://localhost:8545";
 
   STORMX_CONTRACT = require(path.resolve(
     __dirname,

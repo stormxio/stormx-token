@@ -12,6 +12,11 @@ module.exports = {
       evmVersion: "istanbul",
     }
   },
+  deploy: {
+    StormToken: false,
+    StormXToken: false,
+    Swap: false
+  },
   networks: {
     development: {
       host: "127.0.0.1",

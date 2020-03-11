@@ -4,16 +4,20 @@ const Swap = artifacts.require("Swap");
 const truffleConfig = require('../truffle.js');
 const utils = require('./Utils.js');
 
-module.exports = function(deployer, network, accounts) {
+module.exports = async function(deployer, network, accounts) {
+  let result = await utils.canDeploy(network, 'Swap');
+  if (!result) {
+    return;
+  } // skip the deployment in development
 
-    const networkConfig = truffleConfig.networks[network];
-    const ownerAddress = networkConfig.account || accounts[1];
-    const reserveAddress = networkConfig.reserve || accounts[1];
-    const stormXAddress = networkConfig.stormXAddress || StormX.address;
-    const oldTokenAddress = networkConfig.oldTokenAddress || OldToken.address;
+  const networkConfig = truffleConfig.networks[network];
+  const ownerAddress = networkConfig.account || accounts[1];
+  const reserveAddress = networkConfig.reserve || accounts[1];
+  const stormXAddress = StormX.address;
+  const oldTokenAddress = OldToken.address;
 
   deployer
-    .then(() => deployer.deploy(Swap, oldTokenAddress, stormXAddress, reserveAddress))
+    .then(async () => await deployer.deploy(Swap, oldTokenAddress, stormXAddress, reserveAddress))
     .then(async() => await utils.callMethod({
       network,
       artifact: StormX,
@@ -70,3 +74,4 @@ module.exports = function(deployer, network, accounts) {
         }
       }))
 };
+

@@ -2,6 +2,20 @@ const truffle = require('../truffle.js');
 const path = require("path");
 const web3 = require('web3');
 
+async function canDeploy(network, contractName) {
+  if (network === 'development') {
+    return false;
+  }
+
+  if (truffle.deploy[contractName] === false) {
+    console.log(`${contractName}: Skipping deployment: deploy.${contractName} is not set to the boolean true`);
+    return false;
+  }
+
+  return true;
+
+}
+
 async function readAbi(network, contractName) {
   let contract = require(path.resolve(
     __dirname,
@@ -62,5 +76,6 @@ async function callMethod({network, artifact, contractName, methodName, methodAr
 }
 
 module.exports = {
+  canDeploy,
   callMethod
 };

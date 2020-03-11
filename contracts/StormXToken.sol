@@ -13,7 +13,6 @@ contract StormXToken is
 
   using SafeMath for uint256;
 
-  string public standard;
   bool public transfersEnabled;
 
   mapping(address => bool) public recipients;
@@ -44,7 +43,6 @@ contract StormXToken is
     StormXGSNRecipient(address(this), reserve) public { 
       recipients[address(this)] = true;
       emit GSNRecipientAdded(address(this));
-      standard = "Storm Token v2.0";
       transfersEnabled = true;
     }
 

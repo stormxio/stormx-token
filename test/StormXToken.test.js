@@ -30,10 +30,6 @@ contract("StormX token test", async function(accounts) {
     assert.equal(await stormX.decimals(), 18);
   });
 
-  it("standard test", async function() {
-    assert.equal(await stormX.standard(), "Storm Token v2.0");
-  });
-
   it("revert if invalid parameters provided in constructor test", async function() {
     await Utils.assertTxFail(StormX.new(Constants.ADDRESS_ZERO));
   });

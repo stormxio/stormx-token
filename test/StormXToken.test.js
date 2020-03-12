@@ -19,11 +19,11 @@ contract("StormX token test", async function(accounts) {
   });
 
   it("name test", async function() {
-    assert.equal(await stormX.name(), "Storm Token");
+    assert.equal(await stormX.name(), "StormX");
   });
 
   it("symbol test", async function() {
-    assert.equal(await stormX.symbol(), "STORM");
+    assert.equal(await stormX.symbol(), "STMX");
   });
 
   it("decimals test", async function() {

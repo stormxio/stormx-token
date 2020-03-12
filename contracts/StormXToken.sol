@@ -9,7 +9,7 @@ import "./StormXGSNRecipient.sol";
 contract StormXToken is 
   StormXGSNRecipient,         
   ERC20Mintable, 
-  ERC20Detailed("Storm Token", "STORM", 18) {    
+  ERC20Detailed("StormX", "STMX", 18) {    
 
   using SafeMath for uint256;
 

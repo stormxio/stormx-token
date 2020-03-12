@@ -1,7 +1,6 @@
 pragma solidity 0.5.16;
 
 import "@openzeppelin/contracts/GSN/GSNRecipient.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "../interface/IStormXToken.sol";
 

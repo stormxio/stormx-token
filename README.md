@@ -337,7 +337,7 @@ function acceptRelayedCall(
 
 4. Accepts the relayed call originated by the user from if the above returns true, transfers the user’s balance with amount chargeFee to ``stormXReserve``.
 
-5. Otherwise rejects the relayed call with the ``errorCode`` 22, i.e. ``INSUFFICIENT_BALANCE``.
+5. Otherwise rejects the relayed call with the ``errorCode``, i.e. ``INSUFFICIENT_BALANCE``.
 
 #### UC1.7 Send transactions via GSN
 

@@ -35,15 +35,15 @@ The following requirements were gathered and agreed upon before the development:
 | #     | Requirement                                                                                                              |
 |-------|--------------------------------------------------------------------------------------------------------------------------|
 | R1-1  | Supports the standard ERC20 interface and include methods.                                                               |
-| R1-2  | Supports two standard ERC20 events ``Transfer`` and ``Approval`` .                                                               |
-| R1-3  | The ``name`` of the new token is “StormX“.                                                                                   |
-| R1-4  | The ``symbol`` of the new token is “STMX“.                                                                                   |
-| R1-5  | The ``decimals`` of the new token remains the same.                                                                          |
-| R1-6  | The new token supports a function ``transfers()`` for batch transfer of tokens.                                               |
-| R1-7  | The signature of function ``transfers()`` is identical with the signature of the function ``transfers()`` in the original token. |
-| R1-8  | The function ``transfers()`` is available to everyone.                                                                       |
-| R1-9  | The function ``transfers()`` is available only when transfers is not disabled.                                               |
-| R1-10 | The function ``enableTransfers()`` is only available to StormX.                                                              |
+| R1-2  | Supports two standard ERC20 events Transfer and Approval .                                                               |
+| R1-3  | The name of the new token is “StormX“.                                                                                   |
+| R1-4  | The symbol of the new token is “STMX“.                                                                                   |
+| R1-5  | The decimals of the new token remains the same.                                                                          |
+| R1-6  | The new token supports a function transfers()for batch transfer of tokens.                                               |
+| R1-7  | The signature of function transfers() is identical with the signature of the function transfers() in the original token. |
+| R1-8  | The function transfers() is available to everyone.                                                                       |
+| R1-9  | The function transfers() is available only when transfers is not disabled.                                               |
+| R1-10 | The function enableTransfers() is only available to StormX.                                                              |
 | R1-11 | The new token contract is ownable.                                                                                       |
 | R1-12 | StormX is the owner of the new token contract.                                                                           |
 
@@ -57,23 +57,23 @@ The following requirements were gathered and agreed upon before the development:
 | R2-5 | StormX can change the address for collecting fees for GSN at any point.                                                                                               |
 | R2-6 | Users can send meta transactions via GSN and the relayed call should be accepted as long as the users have enough token balance.                                      |
 | R2-7 | The new token smart contract also supports receiving transaction directly.                                                                                            |
-| R2-8 | The meta transaction call via GSN is rejected with the error code ``INSUFFICIENT_BALANCE`` if the user does not have enough balance.                                         |
+| R2-8 | The meta transaction call via GSN is rejected with the error code INSUFFICIENT_BALANCE if the user does not have enough balance.                                      |
 
 ### Security Emphasis
 | #    | Requirement                                                                                                                |
 |------|----------------------------------------------------------------------------------------------------------------------------|
-| R3-1 | The token contract includes methods ``increaseAllowance()`` and ``decreaseAllowance()`` to mitigate allowance double-spend exploit |
+| R3-1 | The token contract includes methods increaseAllowance() and decreaseAllowance() to mitigate allowance double-spend exploit |
 | R3-2 | The token is not pausable.                                                                                                 |
-| R3-3 | The privileged access in the form of functions ​``destroy()​`` and ​``issue()``​ is removed.                                           |
+| R3-3 | The privileged access in the form of functions ​destroy()​ and ​issue()​ is removed.                                           |
 
 
 ### Token Migration
-| #    | Requirement                                                                                                                                                                                                                           |
-|------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| R4-1 | The token swap contract allows for a token swap from old StormX token to the new one.                                                                                                                                                 |
-| R4-2 | The conversion guarantees that the total supply of the new token match exactly with that of the original token.                                                                                                                       |
-| R4-3 | The swap is possible for at least 6 months. Then, StormX can stop it. After stopping the swap, the rest of the tokens should be minted and sent to StormX’s reserve, so the total supply will reach the original StormX total supply. |
-| R4-4 | Users do not need to provide approvals for the tokens to migrate.                                                                                                                                                                     |
+| #      | Requirement                                                                                                                                                                                                                           |
+|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| R4-1   | The token swap contract allows for a token swap from old StormX token to the new one.                                                                                                                                                 |
+| R4-2   | The conversion guarantees that the total supply of the new token match exactly with that of the original token.                                                                                                                       |
+| R4-3   | The swap is possible for at least 6 months. Then, StormX can stop it. After stopping the swap, the rest of the tokens should be minted and sent to StormX’s reserve, so the total supply will reach the original StormX total supply. |
+| R4-4   | Users do not need to provide approvals for the tokens to migrate.                                                                                                                                                                     |
 
 ### Staking Feature
 | #    | Requirement                                                                              |

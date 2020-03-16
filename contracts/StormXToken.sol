@@ -59,7 +59,7 @@ contract StormXToken is
     require(!initialized, "cannot initialize twice");
     require(swap != address(0), "invalid swap address");
     addMinter(swap);
-    addMinter(address(this));
+    // addMinter(address(this));
     validMinter = swap;
     initialized = true;
     emit ValidMinterAdded(swap);
@@ -75,11 +75,12 @@ contract StormXToken is
    * @param amount amount of tokens to mint for ``account``
    */
   function mint(address account, uint256 amount) public onlyMinter returns (bool) {
-    require(initialized, "valid minter not added yet");
-    require(_msgSender() == validMinter, "not authorized to mint");
-    emit F(account);
-    super.mint(account, amount);
-    // _mint(account, amount);
+    // require(initialized, "valid minter not added yet");
+    // require(_msgSender() == validMinter, "not authorized to mint");
+    // emit F(account);
+    // super.mint(account, amount);
+
+    _mint(account, amount);
     emit F(_msgSender());
     return true;
   }

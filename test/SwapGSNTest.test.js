@@ -48,10 +48,11 @@ contract("Token swap GSN test", async function(accounts) {
     oldToken = await OldToken.new(owner, {from: owner});
     newToken = await NewToken.new(reserve, {from: owner});
 
-
     // mint some old tokens for token swap
     await oldToken.mintTokens(user, 100, {from: owner});
     await oldToken.mintTokens(owner, 100, {from: owner});
+
+
 
     this.recipient = await Recipient.deploy({arguments: [oldToken.address, newToken.address, reserve]}).send({ from: owner, gas: 0xfffffffffff });
     
@@ -156,15 +157,15 @@ contract("Token swap GSN test", async function(accounts) {
   });
 
   it.only("convert via GSN call success test", async function() {
+    console.log("test");
     assert.equal(await oldToken.balanceOf(user), 100);
-
+    assert.equal(await oldToken.balanceOf(owner), 100);
+    console.log("before");
     await this.recipient.methods.convert(50).send({from: owner, useGSN: false});
-
-    
     // await newToken.mint(user, 100, {from: owner});
-
+    console.log("after");
     await this.recipient.methods.convert(50).send({from: user});
-    
+    console.log("last");
     // assert proper balance
     assert.equal(await oldToken.balanceOf(user), 50);
     assert.equal(await newToken.balanceOf(user), 140);

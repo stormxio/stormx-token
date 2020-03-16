@@ -365,11 +365,6 @@ function acceptRelayedCall(
 
 3. The registered relayer sends the transaction for the user.
 
-### Future Work
-
-#### F-1 Fixed amount of mintable new StormX token
-
-Currently the StormXToken contract owner has the privileged access to mint token for random users without any restriction. Approaches can be added to require limited amount of mintable StormX tokens.
 
 ### References
 

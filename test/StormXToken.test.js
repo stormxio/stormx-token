@@ -5,16 +5,21 @@ const Constants = require("./Constants.js");
 contract("StormX token test", async function(accounts) {
   const owner = accounts[0];
   const reserve = accounts[1];
+  const mockSwap = accounts[2];
   const user = accounts[3];
   const receiver = accounts[4];
+  
 
   let stormX;
 
   beforeEach(async function(){
     stormX = await StormX.new(reserve, {from: owner});
 
-    // mint some stormX tokens for testing
-    await stormX.mint(user, 100, {from: owner});
+    // initialize
+    await stormX.initialize(mockSwap, {from: owner});
+    // mint some stormX tokens only for testing
+    await stormX.mint(user, 100, {from: mockSwap});
+
     assert.equal(await stormX.balanceOf(user), 100);
   });
 
@@ -28,6 +33,29 @@ contract("StormX token test", async function(accounts) {
 
   it("decimals test", async function() {
     assert.equal(await stormX.decimals(), 18);
+  });
+
+  it("initialize success test", async function() {
+    stormX = await StormX.new(reserve, {from: owner});
+    await stormX.initialize(mockSwap, {from: owner});
+    assert.equal(await stormX.validMinter(), mockSwap);
+    assert.isTrue(await stormX.initialized());
+  });
+
+  it("revert if initialize not called by owner test", async function() {
+    stormX = await StormX.new(reserve, {from: owner});
+    await Utils.assertTxFail(stormX.initialize(mockSwap, {from: user}));
+  });
+
+  it("revert if initialize twice test", async function() {
+    stormX = await StormX.new(reserve, {from: owner});
+    await stormX.initialize(mockSwap, {from: owner});
+    await Utils.assertTxFail(stormX.initialize(mockSwap, {from: owner}));
+  });
+
+  it("revert if invalid parameters provided in initialize test", async function() {
+    stormX = await StormX.new(reserve, {from: owner});
+    await Utils.assertTxFail(stormX.initialize(Constants.ADDRESS_ZERO, {from: owner}));
   });
 
   it("revert if invalid parameters provided in constructor test", async function() {

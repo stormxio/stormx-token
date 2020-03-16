@@ -18,11 +18,42 @@ module.exports = async function(deployer, network, accounts) {
 
   deployer
     .then(async () => await deployer.deploy(Swap, oldTokenAddress, stormXAddress, reserveAddress))
+    // for testing purposes, add a method to minting some old tokens 
+    // before transferring old token ownership to ``Swap.sol``
+    // .then(async() => await utils.callMethod({
+    //   network,
+    //   artifact: OldToken,
+    //   contractName: 'StormToken',
+    //   methodName: 'mintTokens', 
+    //   methodArgsFn: () => ([
+    //     ownerAddress,
+    //     100000,
+    //   ]),
+    //   sendArgs: {
+    //       from: ownerAddress, 
+    //       gasPrice: networkConfig.gasPrice,
+    //       gas: networkConfig.gas
+    //     }
+    //   }))
+    // .then(async() => await utils.callMethod({
+    //   network,
+    //   artifact: OldToken,
+    //   contractName: 'StormToken',
+    //   methodName: 'disableTransfers', // enable transfer in old token contract
+    //   methodArgsFn: () => ([
+    //     false,
+    //   ]),
+    //   sendArgs: {
+    //       from: ownerAddress, 
+    //       gasPrice: networkConfig.gasPrice,
+    //       gas: networkConfig.gas
+    //     }
+    //   }))
     .then(async() => await utils.callMethod({
       network,
       artifact: StormX,
       contractName: 'StormXToken',
-      methodName: 'addMinter', // swap can now mint new tokens during token swap
+      methodName: 'addMinter', // only swap can now mint new tokens during token swap
       methodArgsFn: () => ([
         Swap.address,
       ]),

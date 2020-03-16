@@ -13,6 +13,7 @@ const stormXContract = Constants.STORMX_CONTRACT;
 contract("StormX token GSN test", async function(accounts) {
   const provider = Constants.PROVIDER;
   const owner = accounts[0];
+  const mockSwap = accounts[1];
   const user = accounts[2];
   const spender = accounts[3];
   const reserve = accounts[4];
@@ -36,7 +37,7 @@ contract("StormX token GSN test", async function(accounts) {
 
     // deploy stormx contract as recipient
     Recipient = new this.web3.eth.Contract(stormXContract.abi, null, { data: stormXContract.bytecode });
-    this.recipient = await Recipient.deploy({arguments: [reserve]}).send({ from: owner, gas: 5000000 });
+    this.recipient = await Recipient.deploy({arguments: [reserve]}).send({ from: owner, gas: 50000000 });
 
     // Fund and register the recipient in the hub
     await fundRecipient(this.web3, { recipient: this.recipient.options.address});
@@ -44,8 +45,9 @@ contract("StormX token GSN test", async function(accounts) {
     // Set provider for the recipient
     this.recipient.setProvider(gsnDevProvider);
 
-    // mint some new tokens for testing
-    await this.recipient.methods.mint(user, 100).send({from: owner, useGSN: false});
+    // initialize and mint some new tokens for testing
+    await this.recipient.methods.initialize(mockSwap).send({from: owner, useGSN: false});
+    await this.recipient.methods.mint(user, 100).send({from: mockSwap, useGSN: false});
     assert.equal(await this.recipient.methods.balanceOf(user).call(), 100);
   });
 
@@ -104,7 +106,7 @@ contract("StormX token GSN test", async function(accounts) {
   });
 
   it("GSN transferFrom success only with enough allowance test", async function() {
-    await this.recipient.methods.mint(spender, 10).send({from: owner, useGSN: false});
+    await this.recipient.methods.mint(spender, 10).send({from: mockSwap, useGSN: false});
     await Utils.assertTxFail(this.recipient.methods.transferFrom(user, receiver, 10).send({from: spender}));
     
     // user approves
@@ -173,7 +175,7 @@ contract("StormX token GSN test", async function(accounts) {
     assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 10);
 
     // owner can disable transfers
-    await this.recipient.methods.mint(owner, 100).send({from: owner, useGSN: false});
+    await this.recipient.methods.mint(owner, 100).send({from: mockSwap, useGSN: false});
     await this.recipient.methods.enableTransfers(false).send({from: owner});
     await Utils.assertTxFail(this.recipient.methods.transfers(recipients, values).send({from: user}));
 

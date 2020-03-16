@@ -16,6 +16,7 @@ contract("StormX GSN recipient test", async function(accounts) {
   const provider = Constants.PROVIDER;
   const owner = accounts[0];
   const user = accounts[1];
+  const mockSwap = accounts[2];
   
   let token;
   let reserve;
@@ -50,11 +51,12 @@ contract("StormX GSN recipient test", async function(accounts) {
 
     await token.addGSNRecipient(this.recipient.options.address, {from: owner});
 
-    // mint some new tokens for testing
-    await token.mint(user, 100, {from: owner});
+    // initialize and mint some new tokens for testing
+    await token.initialize(mockSwap, {from: owner});
+    await token.mint(user, 100, {from: mockSwap});
     assert.equal(await token.balanceOf(user), 100);
 
-    await token.mint(owner, 50, {from: owner});
+    await token.mint(owner, 50, {from: mockSwap});
     assert.equal(await token.balanceOf(owner), 50);
   });
 
@@ -149,6 +151,7 @@ contract("StormX GSN add/delete recipient test", async function(accounts) {
   const provider = Constants.PROVIDER;
   const owner = accounts[0];
   const user = accounts[1];
+  const mockSwap = accounts[2];
   
   let token;
   let reserve;
@@ -181,11 +184,12 @@ contract("StormX GSN add/delete recipient test", async function(accounts) {
     // Set provider for the recipient
     this.recipient.setProvider(gsnDevProvider);
 
-    // mint some new tokens for testing
-    await token.mint(user, 100, {from: owner});
+    // initialize and mint some new tokens for testing
+    await token.initialize(mockSwap, {from: owner});
+    await token.mint(user, 100, {from: mockSwap});
     assert.equal(await token.balanceOf(user), 100);
 
-    await token.mint(owner, 50, {from: owner});
+    await token.mint(owner, 50, {from: mockSwap});
     assert.equal(await token.balanceOf(owner), 50);
   });
 

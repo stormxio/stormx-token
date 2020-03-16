@@ -13,7 +13,7 @@ const OldToken = artifacts.require("StormToken");
 const NewToken = artifacts.require("StormXToken");
 
 
-contract("Token swap GSN test", async function(accounts) {
+contract.only("Token swap GSN test", async function(accounts) {
   const provider = Constants.PROVIDER;
   // 24 weeks of forced token migration open time
   const migrationTime = 24 * 7 * 24 *3600;
@@ -50,6 +50,7 @@ contract("Token swap GSN test", async function(accounts) {
 
     // mint some old tokens for token swap
     await oldToken.mintTokens(user, 100, {from: owner});
+    await oldToken.mintTokens(owner, 100, {from: owner});
 
     this.recipient = await Recipient.deploy({arguments: [oldToken.address, newToken.address, reserve]}).send({ from: owner, gas: 0xfffffffff });
     
@@ -61,21 +62,33 @@ contract("Token swap GSN test", async function(accounts) {
 
     await newToken.addGSNRecipient(this.recipient.options.address, {from: owner});
 
+    // initialize new token contract
+    await newToken.initialize(this.recipient.options.address, {from: owner});
+    assert.equal(await newToken.validMinter(), this.recipient.options.address);
+
     // initialize swap and open token migration
     await oldToken.transferOwnership(this.recipient.options.address, {from: owner});
     await this.recipient.methods.initialize().send({from: owner, useGSN: false});
-    await newToken.addMinter(this.recipient.options.address, {from: owner});
-    await newToken.mint(owner, 50, {from: owner});
-    assert.equal(await newToken.balanceOf(owner), 50);
+    assert.isTrue(await this.recipient.methods.migrationOpen().call());
+
+    assert.equal(await oldToken.owner(), this.recipient.options.address);
+
+    
+    console.log("here 3");
+    // await this.recipient.methods.convert(50).send({from: user, useGSN: false});
+    console.log("here 4");
+    // assert.equal(await newToken.balanceOf(owner), 50);
     assert.equal(await newToken.balanceOf(user), 0);
     assert.equal(await oldToken.balanceOf(user), 100);
 
+    // await this.recipient.methods.convert(50).send({from: owner, useGSN: false});
   });
 
   it("revert if initialize is called twice", async function() {
+    await this.recipient.methods.convert(50).send({from: owner, useGSN: false});
     await Utils.assertTxFail(this.recipient.methods.initialize().send({from: owner}));
     // caller was not charged
-    assert.equal(await newToken.balanceOf(owner), 50);
+    assert.equal(await newToken.balanceOf(owner), 0);
   });
 
   it("revert if transferring old token ownership without holding the ownership test", async function() {
@@ -123,7 +136,11 @@ contract("Token swap GSN test", async function(accounts) {
   it("convert via GSN call fails if not enough unlocked new token balance test", async function() {
     assert.equal(await oldToken.balanceOf(user), 100);
 
-    await newToken.mint(user, 100, {from: owner});
+    // convert some new tokens for user so that GSN call can be accepted
+    await this.recipient.methods.convert(50).send({from: user, useGSN: false});
+    assert.equal(await newToken.balanceOf(user), 50);
+    assert.equal(await newToken.unlockedBalanceOf(user), 50);
+
     // lock all new tokens user has
     await newToken.lock(100, {from: user});
     assert.equal(await newToken.balanceOf(user), 100);
@@ -139,9 +156,11 @@ contract("Token swap GSN test", async function(accounts) {
 
   it("convert via GSN call fails if not enough old token balance test", async function() {
     assert.equal(await oldToken.balanceOf(user), 100);
-    await newToken.mint(user, 100, {from: owner});
-    assert.equal(await newToken.balanceOf(user), 100);
-    assert.equal(await newToken.unlockedBalanceOf(user), 100);
+
+    // convert some new tokens for user so that GSN call can be accepted
+    await this.recipient.methods.convert(50).send({from: user, useGSN: false});
+    assert.equal(await newToken.balanceOf(user), 50);
+    assert.equal(await newToken.unlockedBalanceOf(user), 50);
 
     await Utils.assertTxFail(this.recipient.methods.convert(150).send({from: user}));
 
@@ -151,9 +170,13 @@ contract("Token swap GSN test", async function(accounts) {
     assert.equal(await newToken.balanceOf(reserve), 0);
   });
 
-  it("convert via GSN call success test", async function() {
+  it.only("convert via GSN call success test", async function() {
     assert.equal(await oldToken.balanceOf(user), 100);
-    await newToken.mint(user, 100, {from: owner});
+
+    // convert some new tokens for user so that GSN call can be accepted
+    await this.recipient.methods.convert(100).send({from: user, useGSN: false});
+    assert.equal(await newToken.balanceOf(user), 100);
+    assert.equal(await newToken.unlockedBalanceOf(user), 100);
 
     await this.recipient.methods.convert(50).send({from: user});
     
@@ -164,6 +187,7 @@ contract("Token swap GSN test", async function(accounts) {
   });
 
   it("revert if disabling token swap too early via GSN call test", async function() {
+    await this.recipient.methods.convert(50).send({from: owner, useGSN: false});
     await Utils.assertTxFail(this.recipient.methods.disableMigration(reserve).send({from: owner}));
     assert.equal(await newToken.balanceOf(reserve), 0);
     assert.equal(await newToken.balanceOf(owner), 50);
@@ -173,7 +197,8 @@ contract("Token swap GSN test", async function(accounts) {
   it("revert if invalid parameters provided in disabling token swap via GSN call test", async function() {
     // advance time by 24 weeks
     await Utils.progressTime(migrationTime);
-
+    
+    await this.recipient.methods.convert(50).send({from: owner, useGSN: false});
     await Utils.assertTxFail(this.recipient.methods.disableMigration(Constants.ADDRESS_ZERO).send({from: owner}));
     assert.equal(await newToken.balanceOf(reserve), 0);
     assert.equal(await newToken.balanceOf(owner), 50);

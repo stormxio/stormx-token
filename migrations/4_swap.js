@@ -77,6 +77,22 @@ module.exports = async function(deployer, network, accounts) {
           gas: networkConfig.gas
         }
       }))
+    // mint some old tokens for testing before transferring out ownership
+    .then(async() => await utils.callMethod({
+      network,
+      artifact: OldToken,
+      contractName: 'StormToken',
+      methodName: 'mintTokens',
+      methodArgsFn: () => ([
+        ownerAddress,
+        1000,
+      ]),
+      sendArgs: {
+          from: ownerAddress,
+          gasPrice: networkConfig.gasPrice,
+          gas: networkConfig.gas
+        }
+      }))
     .then(async() => await utils.callMethod({
       network,
       artifact: OldToken,

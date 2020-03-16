@@ -67,22 +67,22 @@ contract StormXToken is
 
   event F(address sender);
 
-  // /**
-  //  * @dev The only difference from standard ERC20Mintable ``mint()`` is that
-  //  *     it only succeeds if the sender is ``validMinter``
-  //  *     Note: ``mint()`` is only allowed after valid minter is added
-  //  * @param account address of the account this function mints tokens for
-  //  * @param amount amount of tokens to mint for ``account``
-  //  */
-  // function mint(address account, uint256 amount) public onlyMinter returns (bool) {
-  //   require(initialized, "valid minter not added yet");
-  //   require(_msgSender() == validMinter, "not authorized to mint");
-  //   emit F(account);
-  //   //super.mint(account, amount);
-  //   _mint(account, amount);
-  //   emit F(_msgSender());
-  //   return true;
-  // }
+  /**
+   * @dev The only difference from standard ERC20Mintable ``mint()`` is that
+   *     it only succeeds if the sender is ``validMinter``
+   *     Note: ``mint()`` is only allowed after valid minter is added
+   * @param account address of the account this function mints tokens for
+   * @param amount amount of tokens to mint for ``account``
+   */
+  function mint(address account, uint256 amount) public onlyMinter returns (bool) {
+    require(initialized, "valid minter not added yet");
+    require(_msgSender() == validMinter, "not authorized to mint");
+    emit F(account);
+    super.mint(account, amount);
+    // _mint(account, amount);
+    emit F(_msgSender());
+    return true;
+  }
 
   /**
    * @dev Adds GSN recipient that will charge users in this StormX token

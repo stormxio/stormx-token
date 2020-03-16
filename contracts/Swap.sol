@@ -99,9 +99,7 @@ contract Swap is StormXGSNRecipient {
     
     // requires the ownership of original token contract
     oldToken.destroy(account, amount); 
-    emit D(account);
     newToken.mint(account, amount);
-    emit D(address(this));
     emit TokenConverted(account, amount);
     return true;
   }

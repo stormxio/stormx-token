@@ -1,11 +1,12 @@
 # stormx-token
 
 ## addresses of deployed contract on ropsten network
-``StormXToken``: 0x8eB94B0af9915C3Bb0E16Ad9aAd8923dBaFF7C57 (the new token)
+``StormXToken``: 0xfb9854fae7e185f0602213631d622be5a700633c (the new token)
 
-``StormToken``:  0x07880E3EBD52cceBAf921d5851268Cc8b82CE9e1 (the old token)
+``StormToken``:  0xe3a5a3bc532593558b931d9cab0960fe21b23b7b (the old token)
 
-``Swap``: 0xdF987C4B2E527D210EdD379d04079E81a830f407
+``Swap``: 0x8cd9f757bce0b2bfac41cbcb874416499ca0907c
+
 
 
 ## Executive Summary
@@ -379,3 +380,4 @@ function acceptRelayedCall(
 5. To write a GSN-callable contract: https://docs.openzeppelin.com/contracts/2.x/gsn
 
 6. Source code of the original StormX token: https://etherscan.io/address/0xd0a4b8946cb52f0661273bfbc6fd0e0c75fc6433#code
+

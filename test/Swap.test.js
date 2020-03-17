@@ -22,6 +22,7 @@ contract("StormX token swap test", async function(accounts) {
     oldToken = await OldToken.new(owner, {from: owner});
     stormX = await StormX.new(reserve, {from:owner});
     swap = await Swap.new(oldToken.address, stormX.address, reserve, {from:owner});
+    await stormX.addValidMinter(swap.address, {from: owner});
     await stormX.initialize(swap.address, {from: owner});
     
     // transfer the ownership to contract swap and initialize it
@@ -125,7 +126,7 @@ contract("StormX token swap test", async function(accounts) {
 
     // closing fails if the specified time period has not passed yet
     await Utils.assertTxFail(swap.disableMigration(reserve, {from: owner}));
-
+    
     // advance time by 24 weeks
     await Utils.progressTime(migrationTime);
     
@@ -144,7 +145,7 @@ contract("StormX token swap test", async function(accounts) {
 
     // assert remaining tokens are sent to stormXReserve
     assert.equal(await stormX.balanceOf(reserve), 50);
-    assert.equal(await stormX.totalSupply(), 100);
+    assert.equal(await stormX.totalSupply(), 110);
 
   });
 
@@ -157,16 +158,18 @@ contract("StormX token swap test", async function(accounts) {
     oldToken = await OldToken.new(owner, {from: owner});
     stormX = await StormX.new(reserve, {from:owner});
     let testSwap = await Swap.new(oldToken.address, stormX.address, reserve, {from: owner});
+    await stormX.addValidMinter(testSwap.address, {from: owner});
     await stormX.initialize(testSwap.address, {from: owner});
 
     await oldToken.mintTokens(user, 100, {from: owner});
     await oldToken.transferOwnership(testSwap.address, {from: owner});
-    assert.equal(await stormX.totalSupply(), 0);
+    assert.equal(await stormX.totalSupply(), 10);
     assert.equal(await oldToken.balanceOf(user), 100);
-    
+
     // closing fails since token swap is not open yet
     await Utils.assertTxFail(testSwap.disableMigration(reserve, {from: owner}));
     // token swap is not available 
+
     await Utils.assertTxFail(testSwap.convert(50, {from: user}));
 
     // open token swap by initializing swap
@@ -177,11 +180,11 @@ contract("StormX token swap test", async function(accounts) {
     await Utils.progressTime(migrationTime);
 
     // owner can close token swap 
+    
     await testSwap.disableMigration(reserve, {from: owner});
     assert.equal(await stormX.balanceOf(reserve), 100);
     // token swap is no longer available 
     await Utils.assertTxFail(testSwap.convert(1, {from: user}));
-
     // closing fails since token swap is already closed
     await Utils.assertTxFail(testSwap.disableMigration(reserve, {from: owner}));
   });

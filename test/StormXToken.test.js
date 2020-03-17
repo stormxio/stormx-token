@@ -9,14 +9,13 @@ contract("StormX token test", async function(accounts) {
   const user = accounts[3];
   const receiver = accounts[4];
   
-
   let stormX;
 
   beforeEach(async function(){
     stormX = await StormX.new(reserve, {from: owner});
 
     // initialize
-    await stormX.initialize(mockSwap, {from: owner});
+    await stormX.addValidMinter(mockSwap, {from: owner});
     // mint some stormX tokens only for testing
     await stormX.mint(user, 100, {from: mockSwap});
 
@@ -35,8 +34,25 @@ contract("StormX token test", async function(accounts) {
     assert.equal(await stormX.decimals(), 18);
   });
 
+  it("revert if invalid address provided in addValidMinter test", async function() {
+    stormX = await StormX.new(reserve, {from: owner});
+    await Utils.assertTxFail(stormX.addValidMinter(Constants.ADDRESS_ZERO, {from: owner}));
+  });
+
+  it("revert if addValidMinter not called by owner test", async function() {
+    stormX = await StormX.new(reserve, {from: owner});
+    await Utils.assertTxFail(stormX.addValidMinter(mockSwap, {from: user}));
+  });
+
+  it("addValidMinter success test", async function() {
+    stormX = await StormX.new(reserve, {from: owner});
+    await stormX.addValidMinter(mockSwap, {from: owner});
+    assert.equal(await stormX.validMinter(), mockSwap);
+  });
+
   it("initialize success test", async function() {
     stormX = await StormX.new(reserve, {from: owner});
+    await stormX.addValidMinter(mockSwap, {from: owner});
     await stormX.initialize(mockSwap, {from: owner});
     assert.equal(await stormX.validMinter(), mockSwap);
     assert.isTrue(await stormX.initialized());
@@ -56,6 +72,10 @@ contract("StormX token test", async function(accounts) {
   it("revert if invalid parameters provided in initialize test", async function() {
     stormX = await StormX.new(reserve, {from: owner});
     await Utils.assertTxFail(stormX.initialize(Constants.ADDRESS_ZERO, {from: owner}));
+  });
+
+  it("revert if mint is not authorized test", async function() {
+    await Utils.assertTxFail(stormX.mint(owner, 10, {from: owner}));
   });
 
   it("revert if invalid parameters provided in constructor test", async function() {

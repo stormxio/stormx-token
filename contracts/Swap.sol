@@ -73,27 +73,13 @@ contract Swap is StormXGSNRecipient {
   function transferOldTokenOwnership(address newOwner) public onlyOwner {
     oldToken.transferOwnership(newOwner);
   }
-  event D(address sender);
+
   /**
    * @dev Swaps certain amount of old tokens to new tokens for the user
    * @param amount specified amount of old tokens to swap
    * @return success status of the conversion
    */
-  // function convert(uint256 amount) public canMigrate returns (bool) {
-  //   emit D();
-  //   address account = _msgSender();
-  //   require(oldToken.balanceOf(_msgSender()) >= amount, "Not enough balance");
-  //   emit D();
-  //   // requires the ownership of original token contract
-  //   oldToken.destroy(account, amount); 
-  //   emit D();
-  //   newToken.mint(account, amount);
-  //   emit D();
-  //   emit TokenConverted(account, amount);
-  //   return true;
-  // }
-  function convert(uint256 amount) public returns (bool) {
-    
+  function convert(uint256 amount) public canMigrate returns (bool) {
     address account = _msgSender();
     require(oldToken.balanceOf(_msgSender()) >= amount, "Not enough balance");
     

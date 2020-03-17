@@ -46,7 +46,8 @@ contract("StormX token GSN test", async function(accounts) {
     this.recipient.setProvider(gsnDevProvider);
 
     // initialize and mint some new tokens for testing
-    await this.recipient.methods.initialize(mockSwap).send({from: owner, useGSN: false});
+    await this.recipient.methods.addValidMinter(mockSwap).send({from: owner, useGSN: false});
+    // await this.recipient.methods.initialize(mockSwap).send({from: owner, useGSN: false});
     await this.recipient.methods.mint(user, 100).send({from: mockSwap, useGSN: false});
     assert.equal(await this.recipient.methods.balanceOf(user).call(), 100);
   });
@@ -86,6 +87,10 @@ contract("StormX token GSN test", async function(accounts) {
     assert.equal(await this.recipient.methods.balanceOf(user).call(), 100);
     assert.equal(await this.recipient.methods.balanceOf(receiver).call(), 0);
   });
+
+  it("GSN mint fails if not authorized test", async function() {
+    await Utils.assertTxFail(this.recipient.methods.mint(owner).send({from: user});
+  } 
 
   it("GSN transfer success test", async function() {
     await this.recipient.methods.transfer(receiver, 10).send({from: user});

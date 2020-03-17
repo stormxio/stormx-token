@@ -52,7 +52,7 @@ contract("StormX GSN recipient test", async function(accounts) {
     await token.addGSNRecipient(this.recipient.options.address, {from: owner});
 
     // initialize and mint some new tokens for testing
-    await token.initialize(mockSwap, {from: owner});
+    await token.addValidMinter(mockSwap, {from: owner});
     await token.mint(user, 100, {from: mockSwap});
     assert.equal(await token.balanceOf(user), 100);
 
@@ -108,18 +108,20 @@ contract("StormX GSN recipient test", async function(accounts) {
 
   it("owner and only owner can set stormx reserve address test", async function() {
     let newReserve = accounts[7];
-
+    
     // owner invokes a GSN call 
     await this.recipient.methods.setChargeFee(15).send({from: owner});
     
     // 10 tokens were charged
     assert.equal(await token.balanceOf(owner), 40);
+    
     // reserve receives the charged fee
     assert.equal(await token.balanceOf(reserve), 10);
 
     // owner sets stormx reserve address to newReserve via GSN call
     await this.recipient.methods.setStormXReserve(newReserve).send({from: owner});
     assert.equal(await this.recipient.methods.stormXReserve().call(), newReserve);
+    
     // 15 tokens were charged
     assert.equal(await token.balanceOf(reserve), 25);
     assert.equal(await token.balanceOf(owner), 25);
@@ -127,9 +129,11 @@ contract("StormX GSN recipient test", async function(accounts) {
     // owner invokes another GSN call 
     await this.recipient.methods.setChargeFee(10).send({from: owner}); 
     assert.equal(await this.recipient.methods.chargeFee().call(), 10);
+    
     // newReserve receives the charged fee
     assert.equal(await token.balanceOf(newReserve), 15);
     assert.equal(await token.balanceOf(reserve), 25);
+    
     // 15 were charged
     assert.equal(await token.balanceOf(owner), 10);
 
@@ -185,6 +189,7 @@ contract("StormX GSN add/delete recipient test", async function(accounts) {
     this.recipient.setProvider(gsnDevProvider);
 
     // initialize and mint some new tokens for testing
+    await token.addValidMinter(mockSwap, {from: owner});
     await token.initialize(mockSwap, {from: owner});
     await token.mint(user, 100, {from: mockSwap});
     assert.equal(await token.balanceOf(user), 100);

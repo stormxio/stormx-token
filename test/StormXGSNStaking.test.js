@@ -35,18 +35,18 @@ contract("StormX token staking feature GSN test", async function(accounts) {
 
     // deploy stormx contract as recipient
     Recipient = new this.web3.eth.Contract(stormXContract.abi, null, { data: stormXContract.bytecode });
-    this.recipient = await Recipient.deploy({arguments: [reserve]}).send({ from: owner, gas: 50000000 });
+    this.recipient = await Recipient.deploy({arguments: [reserve]}).send({ from: owner, gas: 0xfffffffffff });
 
     // Fund and register the recipient in the hub
     await fundRecipient(this.web3, { recipient: this.recipient.options.address});
 
     // Set provider for the recipient
     this.recipient.setProvider(gsnDevProvider);
+    
 
     // initialize and mint some new tokens for testing
-    await this.recipient.methods.initialize(mockSwap).send({from: owner, useGSN: false});
+    await this.recipient.methods.addValidMinter(mockSwap).send({from: owner, useGSN: false});
     await this.recipient.methods.mint(user, 100).send({from: mockSwap, useGSN: false});
-    assert.equal(await this.recipient.methods.balanceOf(user).call(), 100);
   });
 
   it("GSN lock fails if not enough unlocked balance of user test", async function() {

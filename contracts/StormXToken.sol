@@ -1,14 +1,15 @@
 pragma solidity 0.5.16;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Mintable.sol";
+// import "@openzeppelin/contracts/token/ERC20/ERC20Mintable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./StormXGSNRecipient.sol";
 
 
 contract StormXToken is 
   StormXGSNRecipient,         
-  ERC20Mintable, 
+  ERC20, 
   ERC20Detailed("StormX", "STMX", 18) {    
 
   using SafeMath for uint256;
@@ -48,40 +49,48 @@ contract StormXToken is
       emit GSNRecipientAdded(address(this));
       transfersEnabled = true;
     }
+  
+  /**
+   * @dev Adds address of deployed ``Swap`` contract 
+   *      as the only valid minter for this token
+   *      Note: must be called before token swap opens in ``Swap.sol``
+   * @param swap address of the deployed ``Swap`` contract
+   * @return success status
+   */
+  function addValidMinter(address swap) public onlyOwner returns (bool) {
+    require(swap != address(0), "invalid swap address");
+    validMinter = swap;
+    emit ValidMinterAdded(swap);
+    return true;
+  }
 
   /**
    * @dev Initializes this contract
-   *      Sets address ``swap`` as the only valid minter for this token
-   *      Note: must be called before token migration opens in ``Swap.sol``
+   *      Adds address ``swap`` as valid GSN recipient
+   *      so that it can charge users for GSN calls
    * @param swap address of the deployed contract ``Swap.sol``
    */
   function initialize(address swap) public onlyOwner {
     require(!initialized, "cannot initialize twice");
     require(swap != address(0), "invalid swap address");
-    addMinter(swap);
-    // addMinter(address(this));
-    validMinter = swap;
+    addGSNRecipient(swap);  
+    // todo(Eeeva1227) some tricks to pass GSN tests
+    // further research and discussions needed 
+    // to derive better approach
+    this.mint(swap, 10); 
     initialized = true;
-    emit ValidMinterAdded(swap);
   }
 
-  event F(address sender);
 
   /**
-   * @dev The only difference from standard ERC20Mintable ``mint()`` is that
-   *     it only succeeds if the sender is ``validMinter``
-   *     Note: ``mint()`` is only allowed after valid minter is added
+   * @dev Mints tokens for user
+   *      Can only be called by itself and ``Swap.sol``
    * @param account address of the account this function mints tokens for
    * @param amount amount of tokens to mint for ``account``
    */
-  function mint(address account, uint256 amount) public onlyMinter returns (bool) {
-    // require(initialized, "valid minter not added yet");
-    // require(_msgSender() == validMinter, "not authorized to mint");
-    // emit F(account);
-    // super.mint(account, amount);
-
+  function mint(address account, uint256 amount) public returns (bool) {
+    require(_msgSender() == validMinter || _msgSender()==address(this), "not authorized to mint");
     _mint(account, amount);
-    emit F(_msgSender());
     return true;
   }
 

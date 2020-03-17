@@ -22,7 +22,7 @@ contract("StormX token swap test", async function(accounts) {
     oldToken = await OldToken.new(owner, {from: owner});
     stormX = await StormX.new(reserve, {from:owner});
     swap = await Swap.new(oldToken.address, stormX.address, reserve, {from:owner});
-    await stormX.addMinter(swap.address);
+    await stormX.initialize(swap.address, {from: owner});
     
     // transfer the ownership to contract swap and initialize it
     await oldToken.transferOwnership(swap.address, {from: owner});
@@ -157,7 +157,7 @@ contract("StormX token swap test", async function(accounts) {
     oldToken = await OldToken.new(owner, {from: owner});
     stormX = await StormX.new(reserve, {from:owner});
     let testSwap = await Swap.new(oldToken.address, stormX.address, reserve, {from: owner});
-    await stormX.addMinter(testSwap.address, {from: owner});
+    await stormX.initialize(testSwap.address, {from: owner});
 
     await oldToken.mintTokens(user, 100, {from: owner});
     await oldToken.transferOwnership(testSwap.address, {from: owner});

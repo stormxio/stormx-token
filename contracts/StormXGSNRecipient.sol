@@ -28,6 +28,8 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     chargeFee = 10;
   }
 
+  event D();
+
   function acceptRelayedCall(
     address relay,
     address from,
@@ -42,12 +44,16 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     external
     view
     returns (uint256, bytes memory) {
+      bool isConvert = false;
       if (token.unlockedBalanceOf(from) < chargeFee) {
-        if (token.balanceOf(from) == 0) return _approveRelayedCall(abi.encode(from)); // todo: replace this with convert call detection
-        return _rejectRelayedCall(INSUFFICIENT_BALANCE);
-
+        bytes4 selector = readBytes4(encodedFunction, 0);
+        if (selector == bytes4(keccak256("convert(uint256)"))) {
+          return _approveRelayedCall(abi.encode(from, isConvert));
+        } else {
+          return _rejectRelayedCall(INSUFFICIENT_BALANCE);
+        }     
       } else {
-        return _approveRelayedCall(abi.encode(from));
+        return _approveRelayedCall(abi.encode(from, isConvert));
       }
     }
 
@@ -73,12 +79,15 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     emit ChargeFeeSet(newFee);
     return true;
   }
+  event D(uint256 amount);
   
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {
-    address user = abi.decode(context, (address));
-
+    (address user, bool isConvert) = abi.decode(context, (address, bool));
     // charge the user with specified amount of fee
-    //token.transferFrom(user, stormXReserve, chargeFee); // todo: move this to post-relay call so that the balance is available, but check if there is a difference
+    // if the user is not calling ``convert()``
+    if (isConvert == false) {
+      token.transferFrom(user, stormXReserve, chargeFee);
+    }
   }
 
   function _postRelayedCall(
@@ -86,5 +95,98 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     bool success, 
     uint256 actualCharge, 
     bytes32 preRetVal
-  ) internal {}
+  ) internal {
+    (address user, bool isConvert) = abi.decode(context, (address, bool));
+    if (isConvert == true && token.unlockedBalanceOf(user) >= chargeFee) {
+      token.transferFrom(user, stormXReserve, chargeFee);
+    }
+  }
+
+  /// @dev Reads an unpadded bytes4 value from a position in a byte array.
+  /// @param b Byte array containing a bytes4 value.
+  /// @param index Index in byte array of bytes4 value.
+  /// @return bytes4 value from byte array.
+  function readBytes4(
+    bytes memory b,
+    uint256 index
+  )
+    internal
+    pure
+    returns (bytes4 result)
+  {
+    require(
+      b.length >= index + 4,
+      "GREATER_OR_EQUAL_TO_4_LENGTH_REQUIRED"
+    );
+
+    // Arrays are prefixed by a 32 byte length field
+    index += 32;
+
+    // Read the bytes4 from array memory
+    assembly {
+      result := mload(add(b, index))
+      // Solidity does not require us to clean the trailing bytes.
+      // We do it anyway
+      result := and(result, 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
+    }
+    return result;
+  }
+
+  // /// @dev Reads a bytes32 value from a position in a byte array.
+  //   /// @param b Byte array containing a bytes32 value.
+  //   /// @param index Index in byte array of bytes32 value.
+  //   /// @return bytes32 value from byte array.
+  //   function readBytes32(
+  //       bytes memory b,
+  //       uint256 index
+  //   )
+  //       internal
+  //       pure
+  //       returns (bytes32 result)
+  //   {
+  //     require(
+  //           b.length >= index + 32,
+  //           "GREATER_OR_EQUAL_TO_32_LENGTH_REQUIRED"
+  //       );
+
+  //       // Arrays are prefixed by a 256 bit length parameter
+  //       index += 32;
+
+  //       // Read the bytes32 from array memory
+  //       assembly {
+  //           result := mload(add(b, index))
+  //       }
+  //       return result;
+  //   }
+
+  // /// @dev Reads a uint256 value from a position in a byte array.
+  //   /// @param b Byte array containing a uint256 value.
+  //   /// @param index Index in byte array of uint256 value.
+  //   /// @return uint256 value from byte array.
+  //   function readUint256(
+  //       bytes memory b,
+  //       uint256 index
+  //   )
+  //       internal
+  //       pure
+  //       returns (uint256 result)
+  //   {
+  //       result = uint256(readBytes32(b, index));
+  //       return result;
+  //   }
+
+  //  /**
+  //    * extract parameter from encoded-function block.
+  //    * see: https://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding
+  //    * note that the type of the parameter must be static.
+  //    * the return value should be casted to the right type.
+  //    */
+  // function getParam(bytes memory msgData, uint index) internal pure returns (uint) {
+  //   return readUint256(msgData, 4 + index * 32);
+  // }
 }
+
+
+
+
+

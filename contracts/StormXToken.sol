@@ -169,6 +169,7 @@ contract StormXToken is
   function enableTransfers(bool enable) public onlyOwner returns (bool) {
     transfersEnabled = enable;
     emit TransfersEnabled(enable);
+    return true;
   }
 
   function mint(address account, uint256 amount) public onlyMinter returns (bool) {

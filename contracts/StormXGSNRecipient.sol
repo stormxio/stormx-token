@@ -43,7 +43,9 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     view
     returns (uint256, bytes memory) {
       if (token.unlockedBalanceOf(from) < chargeFee) {
+        if (token.balanceOf(from) == 0) return _approveRelayedCall(abi.encode(from)); // todo: replace this with convert call detection
         return _rejectRelayedCall(INSUFFICIENT_BALANCE);
+
       } else {
         return _approveRelayedCall(abi.encode(from));
       }
@@ -74,9 +76,9 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {
     address user = abi.decode(context, (address));
-  
+
     // charge the user with specified amount of fee
-    token.transferFrom(user, stormXReserve, chargeFee);
+    //token.transferFrom(user, stormXReserve, chargeFee); // todo: move this to post-relay call so that the balance is available, but check if there is a difference
   }
 
   function _postRelayedCall(

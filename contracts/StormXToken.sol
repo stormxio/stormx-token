@@ -23,6 +23,7 @@ contract StormXToken is
   event TokenLocked(address indexed account, uint256 amount);
   event TokenUnlocked(address indexed account, uint256 amount);
   event TransfersEnabled(bool newStatus);
+  event ValidMinterAdded(address minter);
 
   // Testing that GSN is supported properly 
   event GSNRecipientAdded(address recipient);
@@ -120,7 +121,7 @@ contract StormXToken is
   function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
     require(unlockedBalanceOf(sender) >= amount, "Not enough unlocked token balance of sender");
     // if the msg.sender is charging ``sender`` for a GSN fee
-    // allownace does not apply
+    // allowance does not apply
     // so that no user approval is required for GSN calls
     if (recipients[_msgSender()] == true) {
       _transfer(sender, recipient, amount);
@@ -168,5 +169,30 @@ contract StormXToken is
   function enableTransfers(bool enable) public onlyOwner returns (bool) {
     transfersEnabled = enable;
     emit TransfersEnabled(enable);
+  }
+
+  function mint(address account, uint256 amount) public onlyMinter returns (bool) {
+    require(initialized, "The contract is not initialized yet");
+    require(_msgSender() == validMinter, "not authorized to mint");
+    super.mint(account, amount);
+    return true;
+  }
+
+  bool public initialized = false;
+  address public validMinter;
+
+  /**
+   * @dev Initializes this contract
+   *      Sets address ``swap`` as the only valid minter for this token
+   *      Note: must be called before token migration opens in ``Swap.sol``
+   * @param swap address of the deployed contract ``Swap.sol``
+   */
+  function initialize(address swap) public onlyOwner {
+    require(!initialized, "cannot initialize twice");
+    require(swap != address(0), "invalid swap address");
+    addMinter(swap);
+    validMinter = swap;
+    initialized = true;
+    emit ValidMinterAdded(swap);
   }
 }

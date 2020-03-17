@@ -162,8 +162,8 @@ contract("Token swap GSN test", async function(accounts) {
     
     // assert proper balance
     assert.equal(await oldToken.balanceOf(user), 50);
-    assert.equal(await newToken.balanceOf(user), 50); // todo: this will be 140 when we start charging again
-//    assert.equal(await newToken.balanceOf(reserve), 10); // todo: uncomment when we start charging again
+    assert.equal(await newToken.balanceOf(user), 40); // todo: this will be 140 when we start charging again
+    assert.equal(await newToken.balanceOf(reserve), 10); // todo: uncomment when we start charging again
   });
 
   it("revert if disabling token swap too early via GSN call test", async function() {

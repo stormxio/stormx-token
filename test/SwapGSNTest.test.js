@@ -13,7 +13,7 @@ const OldToken = artifacts.require("StormToken");
 const NewToken = artifacts.require("StormXToken");
 
 
-contract.only("Token swap GSN test", async function(accounts) {
+contract("Token swap GSN test", async function(accounts) {
   const provider = Constants.PROVIDER;
   // 24 weeks of forced token migration open time
   const migrationTime = 24 * 7 * 24 *3600;
@@ -69,11 +69,11 @@ contract.only("Token swap GSN test", async function(accounts) {
     assert.equal(await newToken.balanceOf(owner), 0);
     assert.equal(await newToken.balanceOf(user), 0);
     assert.equal(await oldToken.balanceOf(user), 100);
-    console.log("1");
-    // await this.recipient.methods.convert(60).send({from: owner});
+
+    await this.recipient.methods.convert(60).send({from: owner});
 
     // owner is charged for a fee after ``convert()`` is executed
-    // assert.equal(await newToken.balanceOf(reserve), 10);
+    assert.equal(await newToken.balanceOf(reserve), 10);
   });
 
   it("revert if initialize is called twice", async function() {
@@ -120,24 +120,30 @@ contract.only("Token swap GSN test", async function(accounts) {
     assert.equal(await newToken.balanceOf(reserve), 10);
   });
 
-  it.only("convert via GSN call succeeds with charging if have enough unlocked new token balance after conversion test", async function() {
+  it("convert via GSN call fails if not enough unlocked new token balance of user test", async function() {
+    await Utils.assertGSNFail(this.recipient.methods.convert(5).send({from: user}));
     assert.equal(await oldToken.balanceOf(user), 100);
-    console.log("1");
+    assert.equal(await newToken.balanceOf(user), 0);
+    assert.equal(await newToken.balanceOf(reserve), 10);
+  });
+
+  it("convert via GSN call succeeds with charging if have enough unlocked new token balance after conversion test", async function() {
+    assert.equal(await oldToken.balanceOf(user), 100);
     await this.recipient.methods.convert(80).send({from: user});
+
     // lock all new tokens user has
     await newToken.lock(70, {from: user});
-    assert.equal(await newToken.balanceOf(reserve), 10);
+    assert.equal(await newToken.balanceOf(reserve), 20);
     assert.equal(await newToken.balanceOf(user), 70);
     assert.equal(await newToken.unlockedBalanceOf(user), 0);
 
-    console.log("2");
     // ``convert()`` is executed and user is charged for a fee
     await this.recipient.methods.convert(10).send({from: user});
-    console.log("3");
+
     // assert proper balance
-    assert.equal(await oldToken.balanceOf(user), 0);
-    assert.equal(await newToken.balanceOf(user), 90);
-    assert.equal(await newToken.balanceOf(reserve), 20);
+    assert.equal(await oldToken.balanceOf(user), 10);
+    assert.equal(await newToken.balanceOf(user), 70);
+    assert.equal(await newToken.balanceOf(reserve), 30);
   });
 
   it("convert via GSN call success test", async function() {

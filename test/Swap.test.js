@@ -108,7 +108,7 @@ contract("StormX token swap test", async function(accounts) {
     
     // non-owner fails to close token migration
     await swap.disableMigration(reserve, {from: owner});
-    await Utils.assertTxFail(swap.convert(1, {from: user}));
+    await Utils.assertTxFail(swap.convert(30, {from: user}));
   });
 
   it("token swap success test", async function() {

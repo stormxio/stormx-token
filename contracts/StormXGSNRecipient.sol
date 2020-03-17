@@ -28,8 +28,6 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     chargeFee = 10;
   }
 
-  event D();
-
   function acceptRelayedCall(
     address relay,
     address from,
@@ -48,7 +46,13 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
       if (token.unlockedBalanceOf(from) < chargeFee) {
         bytes4 selector = readBytes4(encodedFunction, 0);
         if (selector == bytes4(keccak256("convert(uint256)"))) {
-          return _approveRelayedCall(abi.encode(from, isConvert));
+          isConvert = true;
+          uint256 amount = uint256(getParam(encodedFunction, 0));
+          if (amount >= chargeFee) {
+            return _approveRelayedCall(abi.encode(from, isConvert));
+          } else {
+            return _rejectRelayedCall(INSUFFICIENT_BALANCE);
+          }
         } else {
           return _rejectRelayedCall(INSUFFICIENT_BALANCE);
         }     
@@ -79,7 +83,6 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     emit ChargeFeeSet(newFee);
     return true;
   }
-  event D(uint256 amount);
   
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {
     (address user, bool isConvert) = abi.decode(context, (address, bool));
@@ -102,15 +105,18 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     }
   }
 
-  /// @dev Reads an unpadded bytes4 value from a position in a byte array.
-  /// @param b Byte array containing a bytes4 value.
-  /// @param index Index in byte array of bytes4 value.
-  /// @return bytes4 value from byte array.
+  /** 
+   * @dev Reads a bytes4 value from a position in a byte array.
+   * Note: for reference, see source code 
+   * https://etherscan.io/address/0xD216153c06E857cD7f72665E0aF1d7D82172F494#code
+   * @param b Byte array containing a bytes4 value.
+   * @param index Index in byte array of bytes4 value.
+   * @return bytes4 value from byte array.
+   */
   function readBytes4(
     bytes memory b,
     uint256 index
-  )
-    internal
+  ) internal
     pure
     returns (bytes4 result)
   {
@@ -132,61 +138,68 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     return result;
   }
 
-  // /// @dev Reads a bytes32 value from a position in a byte array.
-  //   /// @param b Byte array containing a bytes32 value.
-  //   /// @param index Index in byte array of bytes32 value.
-  //   /// @return bytes32 value from byte array.
-  //   function readBytes32(
-  //       bytes memory b,
-  //       uint256 index
-  //   )
-  //       internal
-  //       pure
-  //       returns (bytes32 result)
-  //   {
-  //     require(
-  //           b.length >= index + 32,
-  //           "GREATER_OR_EQUAL_TO_32_LENGTH_REQUIRED"
-  //       );
+  /** 
+   * @dev Reads a bytes32 value from a position in a byte array.
+   * Note: for reference, see source code 
+   * https://etherscan.io/address/0xD216153c06E857cD7f72665E0aF1d7D82172F494#code
+   * @param b Byte array containing a bytes32 value.
+   * @param index Index in byte array of bytes32 value.
+   * @return bytes32 value from byte array.
+   */
+  function readBytes32(
+    bytes memory b,
+    uint256 index
+  ) 
+    internal
+    pure
+    returns (bytes32 result) 
+  {
+    require(
+      b.length >= index + 32,
+      "GREATER_OR_EQUAL_TO_32_LENGTH_REQUIRED"
+    );
 
-  //       // Arrays are prefixed by a 256 bit length parameter
-  //       index += 32;
+    // Arrays are prefixed by a 256 bit length parameter
+    index += 32;
 
-  //       // Read the bytes32 from array memory
-  //       assembly {
-  //           result := mload(add(b, index))
-  //       }
-  //       return result;
-  //   }
+    // Read the bytes32 from array memory
+    assembly {
+      result := mload(add(b, index))
+    }
+    return result;
+  }
+  
+  /** 
+   * @dev Reads a uint256 value from a position in a byte array.
+   * Note: for reference, see source code 
+   * https://etherscan.io/address/0xD216153c06E857cD7f72665E0aF1d7D82172F494#code
+   * @param b Byte array containing a uint256 value.
+   * @param index Index in byte array of uint256 value.
+   * @return uint256 value from byte array.
+   */
+  function readUint256(
+    bytes memory b,
+    uint256 index
+  ) internal
+    pure
+    returns (uint256 result)
+  {
+    result = uint256(readBytes32(b, index));
+    return result;
+  }
 
-  // /// @dev Reads a uint256 value from a position in a byte array.
-  //   /// @param b Byte array containing a uint256 value.
-  //   /// @param index Index in byte array of uint256 value.
-  //   /// @return uint256 value from byte array.
-  //   function readUint256(
-  //       bytes memory b,
-  //       uint256 index
-  //   )
-  //       internal
-  //       pure
-  //       returns (uint256 result)
-  //   {
-  //       result = uint256(readBytes32(b, index));
-  //       return result;
-  //   }
-
-  //  /**
-  //    * extract parameter from encoded-function block.
-  //    * see: https://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding
-  //    * note that the type of the parameter must be static.
-  //    * the return value should be casted to the right type.
-  //    */
-  // function getParam(bytes memory msgData, uint index) internal pure returns (uint) {
-  //   return readUint256(msgData, 4 + index * 32);
-  // }
+ /**
+  * @dev extract parameter from encoded-function block.
+  * Note: for reference, see source code 
+  * https://etherscan.io/address/0xD216153c06E857cD7f72665E0aF1d7D82172F494#code
+  * https://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding
+  * note that the type of the parameter must be static.
+  * the return value should be casted to the right type.
+  * @param msgData encoded calldata
+  * @param index in byte array of bytes memory
+  * @return the parameter extracted from call data
+  */
+  function getParam(bytes memory msgData, uint index) internal pure returns (uint) {
+    return readUint256(msgData, 4 + index * 32);
+  }
 }
-
-
-
-
-

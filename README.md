@@ -115,8 +115,8 @@ Only the contract owner can call the methods ``setChargeFee(uint256 newFee)`` an
 #### Charging
 
 For any contract inheriting from this contract, it will try to charge users for every GSN relayed call.
-1. This contract accepts the GSN relayed call if the user has enough unlocked token balance and will charge user before the called function is executed.
-2. If the user does not have enough unlocked token balance and is calling the function ``convert()``, this contract accepts the GSN relayed call and charges users only if they will have enough unlocked new token balance after ``convert()`` is executed. Otherwise, rejects the GSN relayed call.
+1. This contract accepts the GSN relayed call if the user has enough unlocked token balance and will charge user before the called function is executed. Otherwise, rejects the relayed call.
+2. If the user does not have enough unlocked token balance and is calling the function ``convert(uint256 amount)``, this contract accepts the GSN relayed call and charges users only if they will have enough unlocked new token balance after ``convert(uint256 amount)`` is executed, i.e. ``amount >= chargeFee``. Otherwise, rejects the GSN relayed call.
 
 
 #### GSN Support
@@ -135,8 +135,10 @@ StormXToken is in compliance with ERC20 as described in ​eip-20.md​. This t
 
 #### Mint
 The function ``mint()`` is overriden in this contract to prevent contract owner from minting tokens arbitrarily.
-There is only one valid minter which can be set by the function ``StormXToken.initialize(address swap) public onlyOwner``.
+There is only one valid minter which should be set by the function ``StormXToken.initialize(address swap) public onlyOwner``.
 This function ``StormXToken.initialize()`` can only be called once and is only available to contract owner. After this function is invoked, ``swap`` will be the only address that can call function ``mint()``.
+
+Note: to support token migration, ``StormXToken.initialize()`` must be called before any ``Swap.convert()`` function call is executed.
 
 #### Transferring in batch
 
@@ -227,7 +229,7 @@ The following order is strictly required when deploying relevant contracts and s
 
 3. StormXAdmin invokes the function ``StormXToken.initialize(Swap.address)`` so that only Swap can mint new tokens during token swap.
 
-   - verify that ``Swap.address`` is added as a valid minter address of ``StormXToken`` successfully.
+   - verify that ``Swap.address`` is added as the valid minter address of ``StormXToken`` successfully.
 
 4. StormXAdmin invokes the function ``StormXToken.addGSNRecipient(Swap.address)`` so that Swapcan charge users for GSN relayed calls.
 
@@ -279,7 +281,7 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 2. The Swap contract accepts the relayed call from GSN and execute ``convert(amount)`` if the user has enough unlocked new StormX token balance or ``amount >= chargeFee``.
 
-3. The contract charges the user by ``chargeFee`` if the user has enough unlocked token balance right now, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``.
+3. The contract charges the user by ``chargeFee`` if the user has enough unlocked token balance right now, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``. Otherwise, the charging will be in step 8 if the transaction succeeds.
 
 4. The function checks whether the ``_msgSender()``(i.e the original caller) has this amount of original StormX tokens, and reverts if not.
 

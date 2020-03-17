@@ -59,6 +59,7 @@ contract("StormX token GSN test", async function(accounts) {
 
   // user is charged for a fee in this case
   // since the function call is valid before charging and the call is accepted
+  // test that the user is charged before the function is executed, i.e. in ``preRelayedCall()``
   it("GSN transfer fails if not enough balance after being charged test -- case1", async function() {
     assert.equal(await this.recipient.methods.balanceOf(user).call(), 100);
 

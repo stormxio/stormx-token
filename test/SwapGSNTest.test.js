@@ -115,12 +115,14 @@ contract("Token swap GSN test", async function(accounts) {
   it("convert via GSN call fails if not enough old token balance of user test", async function() {
     await Utils.assertTxFail(this.recipient.methods.convert(10000).send({from: user}));
     
+    // the user is not charged
     assert.equal(await oldToken.balanceOf(user), 100);
     assert.equal(await newToken.balanceOf(user), 0);
     assert.equal(await newToken.balanceOf(reserve), 10);
   });
 
-  it("convert via GSN call fails if not enough unlocked new token balance of user test", async function() {
+  it("convert via GSN call fails if not enough unlocked new token balance of user even after conversion test", async function() {
+    // parameter ``amount < chargeFee``, GSN call is rejected
     await Utils.assertGSNFail(this.recipient.methods.convert(5).send({from: user}));
     assert.equal(await oldToken.balanceOf(user), 100);
     assert.equal(await newToken.balanceOf(user), 0);
@@ -129,7 +131,11 @@ contract("Token swap GSN test", async function(accounts) {
 
   it("convert via GSN call succeeds with charging if have enough unlocked new token balance after conversion test", async function() {
     assert.equal(await oldToken.balanceOf(user), 100);
+
+    // parameter ``amount >= chargeFee``, GSN call is accepted
     await this.recipient.methods.convert(80).send({from: user});
+    // user is charged
+    assert.equal(await newToken.balanceOf(reserve), 20);
 
     // lock all new tokens user has
     await newToken.lock(70, {from: user});
@@ -149,13 +155,17 @@ contract("Token swap GSN test", async function(accounts) {
   it("convert via GSN call success test", async function() {
     assert.equal(await oldToken.balanceOf(user), 100);
 
-    // the user should not need balance to convert
     await this.recipient.methods.convert(50).send({from: user});
-    
+    assert.equal(await newToken.balanceOf(reserve), 20); 
+
+    // user has enough unlocked token balance
+    await this.recipient.methods.convert(20).send({from: user});
+    // user is charged
+    assert.equal(await newToken.balanceOf(reserve), 30); 
+
     // assert proper balance
-    assert.equal(await oldToken.balanceOf(user), 50);
-    assert.equal(await newToken.balanceOf(user), 40);
-    assert.equal(await newToken.balanceOf(reserve), 20); // reserve receives charged fee twice
+    assert.equal(await oldToken.balanceOf(user), 30);
+    assert.equal(await newToken.balanceOf(user), 50);  
   });
 
   it("revert if disabling token swap too early via GSN call test", async function() {

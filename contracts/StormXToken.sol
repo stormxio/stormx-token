@@ -14,6 +14,8 @@ contract StormXToken is
   using SafeMath for uint256;
 
   bool public transfersEnabled;
+  bool public initialized = false;
+  address public validMinter;
 
   mapping(address => bool) public recipients;
 
@@ -178,9 +180,6 @@ contract StormXToken is
     super.mint(account, amount);
     return true;
   }
-
-  bool public initialized = false;
-  address public validMinter;
 
   /**
    * @dev Initializes this contract

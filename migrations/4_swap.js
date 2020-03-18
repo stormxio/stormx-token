@@ -22,7 +22,7 @@ module.exports = async function(deployer, network, accounts) {
       network,
       artifact: StormX,
       contractName: 'StormXToken',
-      methodName: 'addMinter', // swap can now mint new tokens during token swap
+      methodName: 'initialize', // swap can now mint new tokens during token swap
       methodArgsFn: () => ([
         Swap.address,
       ]),

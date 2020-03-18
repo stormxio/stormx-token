@@ -42,14 +42,15 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     external
     view
     returns (uint256, bytes memory) {
-      bool isConvert = false;
+      bool chargeBefore = true;
       if (token.unlockedBalanceOf(from) < chargeFee) {
         bytes4 selector = readBytes4(encodedFunction, 0);
         if (selector == bytes4(keccak256("convert(uint256)"))) {
-          isConvert = true;
           uint256 amount = uint256(getParam(encodedFunction, 0));
           if (amount >= chargeFee) {
-            return _approveRelayedCall(abi.encode(from, isConvert));
+            // we can charge this after the conversion
+            chargeBefore = false;
+            return _approveRelayedCall(abi.encode(from, chargeBefore));
           } else {
             return _rejectRelayedCall(INSUFFICIENT_BALANCE);
           }
@@ -57,7 +58,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
           return _rejectRelayedCall(INSUFFICIENT_BALANCE);
         }     
       } else {
-        return _approveRelayedCall(abi.encode(from, isConvert));
+        return _approveRelayedCall(abi.encode(from, chargeBefore));
       }
     }
 
@@ -85,12 +86,13 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   }
   
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {
-    (address user, bool isConvert) = abi.decode(context, (address, bool));
+    (address user, bool chargeBefore) = abi.decode(context, (address, bool));
     // charge the user with specified amount of fee
     // if the user is not calling ``convert()``
-    if (!isConvert) {
+    if (chargeBefore) {
       token.transferFrom(user, stormXReserve, chargeFee);
     }
+    return "";
   }
 
   function _postRelayedCall(
@@ -99,8 +101,8 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     uint256 actualCharge, 
     bytes32 preRetVal
   ) internal {
-    (address user, bool isConvert) = abi.decode(context, (address, bool));
-    if (isConvert && token.unlockedBalanceOf(user) >= chargeFee) {
+    (address user, bool chargeBefore) = abi.decode(context, (address, bool));
+    if (!chargeBefore) {
       token.transferFrom(user, stormXReserve, chargeFee);
     }
   }

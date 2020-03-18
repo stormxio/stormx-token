@@ -112,6 +112,15 @@ The function ``acceptRelayedCall()`` implemented in ``StormXGSNRecipient.sol`` d
 
 Only the contract owner can call the methods ``setChargeFee(uint256 newFee)`` and ``setStormXReserve(address newReserve)`` to set ``chargeFee`` and ``stormXReserve`` respectively. If ``chargeFee`` and ``stormXReserve`` are set successfully, events ``ChargeFeeSet(uint256 newFee)`` and ``StormXReserveSet(address newAddress)`` will be emitted respectively.
 
+#### Charging
+
+For any contract inheriting from this contract, it will try to charge users for every GSN relayed call.
+1. This contract accepts the GSN relayed call if the user has enough unlocked token balance and will charge user before the called function is executed.
+
+2. If the user does not have enough unlocked token balance and is calling the function ``convert(uint256 amount)``, this contract accepts the GSN relayed call and charges users only if they will have enough unlocked new token balance after ``convert(uint256 amount)`` is executed, i.e. ``amount >= chargeFee``.
+
+3. If neither of the previous is satisfied, rejects the relayed call.
+
 #### GSN Support
 
 The existing token smart contract is only able to receive transactions directly. The new token smart contract and the swap contract is GSN-capable and can receive transactions from GSN, as well as they will be callable directly by users. Each accepted meta transaction via GSN will charge the user a certain amount of StormX tokens (see requirement R2-2), with the default value being 10 StormX tokens. A setter for this value is provided so that StormX can change it at any point.
@@ -124,7 +133,14 @@ StormXToken is the new token contract implemented for StormX. It supports standa
 
 #### Standard ERC20 interface
 
-StormXToken is in compliance with ERC20 as described in ​eip-20.md​. This token contract is ownable and mintable. Caller of the constructor becomes the owner and only the owner can add minters for this token contract. For future work, minters should not mint any tokens after token migration is closed (see F-1).
+StormXToken is in compliance with ERC20 as described in ​eip-20.md​. This token contract is ownable and mintable. Caller of the constructor becomes the owner and only the owner can add minters for this token contract. 
+
+#### Mint
+The function ``mint()`` is overriden in this contract to prevent contract owner from minting tokens arbitrarily.
+There is only one valid minter which should be set by the function ``StormXToken.initialize(address swap) public onlyOwner``.
+This function ``StormXToken.initialize()`` can only be called once and is only available to contract owner. After this function is invoked, ``swap`` will be the only address that can call function ``mint()``.
+
+Note: to support token migration, ``StormXToken.initialize()`` must be called before any ``Swap.convert()`` function call is executed.
 
 #### Transferring in batch
 
@@ -167,7 +183,7 @@ Anyone can call read methods to retrieve the different kinds of balance.
 
 StormXToken contract inherits from ``StormXGSNRecipient`` (see StormXGSNRecipient section for more details) and is able to receive GSN relayed calls from GSN relay hub. For references, see [1,2].
 
-By inheriting from ``StormXGSNRecipient``, the contract can charge users in StormX tokens for any accepted GSN relayed calls , and the charged tokens will be transferred to the specified StormX’s reserve address.
+By inheriting from ``StormXGSNRecipient``, the contract can charge users in StormX tokens for any accepted GSN relayed calls , and the charged tokens will be transferred to the specified StormX’s reserve address (see Charging section under StormXGSNRecipient).
 
 For any contract inheriting from ``StormXGSNRecipient`` that will charge users, it must be added as GSNRecipient in this token contract, otherwise the charging will fail. If a valid GSNRecipient is deleted by the contract owner, it will also fail to charge users for any fees. Only the contract owner can call the methods ``addGSNRecipient(address recipient)`` and ``deleteGSNRecipient(address recipient)`` to add and delete GSNRecipient respectively.
 
@@ -213,9 +229,9 @@ The following order is strictly required when deploying relevant contracts and s
 
    - verify that StormXAdmin is the owner of ``Swap`` contract.
 
-3. StormXAdmin invokes the function ``StormXToken.addMinter(Swap.address)`` so that Swapcan mint new tokens during token swap.
+3. StormXAdmin invokes the function ``StormXToken.initialize(Swap.address)`` so that only Swap can mint new tokens during token swap.
 
-   - verify that ``Swap.address`` is added as a valid minter address of ``StormXToken`` successfully.
+   - verify that ``Swap.address`` is added as the valid minter address of ``StormXToken`` successfully.
 
 4. StormXAdmin invokes the function ``StormXToken.addGSNRecipient(Swap.address)`` so that Swapcan charge users for GSN relayed calls.
 
@@ -259,15 +275,15 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 6. The function emits the event ``TokenUnlocked(userAddress, amount)`` to indicate the success of unstaking.
 
-7. The function returns true .
+7. The function returns true.
 
 #### UC1.3 User converts original tokens to new StormX token via GSN call
 
 1. The user calls the function ``convert(amount)`` with signed signature to GSN.
 
-2. The Swap contract accepts the relayed call from GSN and execute ``convert(amount)`` if the user has enough unlocked new StormX token balance, i.e. no less than specified ``chargeFee``, and rejects otherwise.
+2. The Swap contract accepts the relayed call from GSN and execute ``convert(amount)`` if the user has enough unlocked new StormX token balance or ``amount >= chargeFee``.
 
-3. The user is charged by the specified amount ``chargeFee`` of new StormX tokens, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``.
+3. The contract charges the user by ``chargeFee`` if the user has enough unlocked token balance right now, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``. Otherwise, the charging will be in step 8 if the transaction succeeds.
 
 4. The function checks whether the ``_msgSender()``(i.e the original caller) has this amount of original StormX tokens, and reverts if not.
 
@@ -276,6 +292,8 @@ All use cases are considered using GSN. If the user calls functions directly for
 6. The event ``TokenConverted(userAddress, amount)`` is emitted to indicate the success of conversion.
 
 7. The function returns true.
+
+8. The user is charged by the specified amount ``chargeFee`` of new StormX tokens if the user was not charged previously, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``.
 
 #### UC1.4 StormX admin closes token migration and collects all the rest of original tokens via GSN
 
@@ -338,7 +356,12 @@ function acceptRelayedCall(
 
 4. Accepts the relayed call originated by the user from if the above returns true, transfers the user’s balance with amount chargeFee to ``stormXReserve``.
 
-5. Otherwise rejects the relayed call with the ``errorCode``, i.e. ``INSUFFICIENT_BALANCE``.
+5. Otherwise, if the user is not calling ``convert(uint256 amount)``, rejects the relayed call with the ``errorCode``, i.e. ``INSUFFICIENT_BALANCE``.
+
+6. If the user is calling ``convert(uint256 amount)`` and ``amount >= chargeFee``, accepts the call and charge the user after ``convert()`` is executed successfully.
+
+7. Rejects the call with ``errorcode`` otherwise.
+
 
 #### UC1.7 Send transactions via GSN
 

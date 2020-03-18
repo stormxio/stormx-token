@@ -187,7 +187,6 @@ contract("StormX GSN add/delete recipient test", async function(accounts) {
     // intialize and mint some new tokens for testing
     await token.initialize(mockSwap, {from: owner});
     await token.mint(user, 100, {from: mockSwap});
-    // await token.addGSNRecipient(this.recipient.options.address, {from: owner});
     assert.equal(await token.balanceOf(user), 100);
 
     await token.mint(owner, 50, {from: mockSwap});

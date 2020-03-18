@@ -88,7 +88,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     (address user, bool isConvert) = abi.decode(context, (address, bool));
     // charge the user with specified amount of fee
     // if the user is not calling ``convert()``
-    if (isConvert == false) {
+    if (!isConvert) {
       token.transferFrom(user, stormXReserve, chargeFee);
     }
   }
@@ -100,7 +100,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     bytes32 preRetVal
   ) internal {
     (address user, bool isConvert) = abi.decode(context, (address, bool));
-    if (isConvert == true && token.unlockedBalanceOf(user) >= chargeFee) {
+    if (isConvert && token.unlockedBalanceOf(user) >= chargeFee) {
       token.transferFrom(user, stormXReserve, chargeFee);
     }
   }

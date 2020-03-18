@@ -119,7 +119,7 @@ For any contract inheriting from this contract, it will try to charge users for 
 
 2. If the user does not have enough unlocked token balance and is calling the function ``convert(uint256 amount)``, this contract accepts the GSN relayed call and charges users only if they will have enough unlocked new token balance after ``convert(uint256 amount)`` is executed, i.e. ``amount >= chargeFee``.
 
-3. If neither point 1 nor point 2 is satisfied, rejects the relayed call.
+3. If neither of the previous is satisfied, rejects the relayed call.
 
 #### GSN Support
 

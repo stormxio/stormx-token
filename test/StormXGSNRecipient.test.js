@@ -49,6 +49,7 @@ contract("StormX GSN recipient test", async function(accounts) {
     // Set provider for the recipient
     this.recipient.setProvider(gsnDevProvider);
 
+    await this.recipient.methods.setChargeFee(10).send({from: owner, useGSN: false});
     await token.addGSNRecipient(this.recipient.options.address, {from: owner});
 
     // initialize and mint some new tokens for testing
@@ -184,6 +185,7 @@ contract("StormX GSN add/delete recipient test", async function(accounts) {
     // Set provider for the recipient
     this.recipient.setProvider(gsnDevProvider);
 
+    await this.recipient.methods.setChargeFee(10).send({from: owner, useGSN: false});
     // intialize and mint some new tokens for testing
     await token.initialize(mockSwap, {from: owner});
     await token.mint(user, 100, {from: mockSwap});

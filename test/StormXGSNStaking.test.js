@@ -43,6 +43,7 @@ contract("StormX token staking feature GSN test", async function(accounts) {
     // Set provider for the recipient
     this.recipient.setProvider(gsnDevProvider);
 
+    await this.recipient.methods.setChargeFee(10).send({from: owner, useGSN: false});
     // initialize and mint some new tokens for testing
     await this.recipient.methods.initialize(mockSwap).send({from: owner, useGSN: false});
     await this.recipient.methods.mint(user, 100).send({from: mockSwap, useGSN: false});

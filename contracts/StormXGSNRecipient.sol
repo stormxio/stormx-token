@@ -25,7 +25,8 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
 
     token = IStormXToken(tokenAddress);
     stormXReserve = reserve;
-    chargeFee = 10;
+    // decimals of StormXToken is 18
+    chargeFee = 10 * (10 ** 18);
   }
 
   function acceptRelayedCall(

@@ -15,6 +15,7 @@ module.exports = async function(deployer, network, accounts) {
   const reserveAddress = networkConfig.reserve || accounts[1];
   const stormXAddress = StormX.address;
   const oldTokenAddress = OldToken.address;
+  const mintAmount = 10000 * (10 ** 18);
 
   deployer
     .then(async () => await deployer.deploy(Swap, oldTokenAddress, stormXAddress, reserveAddress))
@@ -54,7 +55,7 @@ module.exports = async function(deployer, network, accounts) {
       methodName: 'mintTokens',
       methodArgsFn: () => ([
         ownerAddress,
-        1000,
+        mintAmount,
       ]),
       sendArgs: {
           from: ownerAddress,
@@ -62,6 +63,20 @@ module.exports = async function(deployer, network, accounts) {
           gas: networkConfig.gas
         }
       }))
+      .then(async() => await utils.callMethod({
+        network,
+        artifact: OldToken,
+        contractName: 'StormToken',
+        methodName: 'disableTransfers',
+        methodArgsFn: () => ([
+          false,
+        ]),
+        sendArgs: {
+            from: ownerAddress,
+            gasPrice: networkConfig.gasPrice,
+            gas: networkConfig.gas
+          }
+        }))
     .then(async() => await utils.callMethod({
       network,
       artifact: OldToken,

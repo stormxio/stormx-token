@@ -53,6 +53,7 @@ contract("Token swap GSN test", async function(accounts) {
 
     this.recipient = await Recipient.deploy({arguments: [oldToken.address, newToken.address, reserve]}).send({ from: owner, gas: 0xfffffffff });
     
+    await this.recipient.methods.setChargeFee(10).send({from: owner, useGSN: false});
     // Fund and register the recipient in the hub
     await fundRecipient(this.web3, { recipient: this.recipient.options.address});
 

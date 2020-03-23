@@ -2,10 +2,13 @@ pragma solidity 0.5.16;
 
 import "@openzeppelin/contracts/GSN/GSNRecipient.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interface/IStormXToken.sol";
 
 
 contract StormXGSNRecipient is GSNRecipient, Ownable {
+
+  using SafeMath for uint256;
 
   // Variables and constants for supporting GSN
   uint256 constant INSUFFICIENT_BALANCE = 11;
@@ -43,23 +46,11 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     external
     view
     returns (uint256, bytes memory) {
-      bool chargeBefore = true;
-      if (token.unlockedBalanceOf(from) < chargeFee) {
-        bytes4 selector = readBytes4(encodedFunction, 0);
-        if (selector == bytes4(keccak256("convert(uint256)"))) {
-          uint256 amount = uint256(getParam(encodedFunction, 0));
-          if (amount >= chargeFee) {
-            // we can charge this after the conversion
-            chargeBefore = false;
-            return _approveRelayedCall(abi.encode(from, chargeBefore));
-          } else {
-            return _rejectRelayedCall(INSUFFICIENT_BALANCE);
-          }
-        } else {
-          return _rejectRelayedCall(INSUFFICIENT_BALANCE);
-        }     
+      (bool accept, bool chargeBefore) = _acceptRelayedCall(from, encodedFunction);
+      if (accept) {
+        return  _approveRelayedCall(abi.encode(from, chargeBefore));
       } else {
-        return _approveRelayedCall(abi.encode(from, chargeBefore));
+        return _rejectRelayedCall(INSUFFICIENT_BALANCE);
       }
     }
 
@@ -84,6 +75,41 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     chargeFee = newFee;
     emit ChargeFeeSet(newFee);
     return true;
+  }
+
+  /**
+   * @dev Checks whether to accepte a GSN relayed call
+   * @param from the user originating the GSN relayed call
+   * @param encodedFunction the function call to relay, including data
+   * @return ``accept`` indicates whether to accept the relayed call
+   *         ``chargeBefore`` indicates whether to charge before executing encoded function
+   */
+  function _acceptRelayedCall(
+    address from,
+    bytes memory encodedFunction
+  ) internal view returns (bool accept, bool chargeBefore) {
+    bool chargeBefore = true;
+    uint256 unlockedBalance = token.unlockedBalanceOf(from);
+    if (unlockedBalance < chargeFee) {
+      bytes4 selector = readBytes4(encodedFunction, 0);
+      if (selector == bytes4(keccak256("convert(uint256)"))) {
+        // unlocked token balance for the user if conversion succeeds
+        uint256 amount = uint256(getParam(encodedFunction, 0)).add(unlockedBalance);
+        if (amount >= chargeFee) {
+          // we can charge this after the conversion
+          chargeBefore = false;
+          return (true, chargeBefore);
+        } else {
+          // if rejects the call, the value of chargeBefore does not matter
+          return (false, chargeBefore);
+        }
+      } else {
+        // if rejects the call, the value of chargeBefore does not matter
+        return (false, chargeBefore);
+      }
+    } else {
+      return (true, chargeBefore);
+    }
   }
   
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {

@@ -134,23 +134,36 @@ contract("Token swap GSN test", async function(accounts) {
     assert.equal(await oldToken.balanceOf(user), 100);
 
     // parameter ``amount >= chargeFee``, GSN call is accepted
-    await this.recipient.methods.convert(80).send({from: user});
+    await this.recipient.methods.convert(85).send({from: user});
     // user is charged
     assert.equal(await newToken.balanceOf(reserve), 20);
 
     // lock all new tokens user has
     await newToken.lock(70, {from: user});
+    assert.equal(await oldToken.balanceOf(user), 15);
     assert.equal(await newToken.balanceOf(reserve), 20);
-    assert.equal(await newToken.balanceOf(user), 70);
-    assert.equal(await newToken.unlockedBalanceOf(user), 0);
+    assert.equal(await newToken.balanceOf(user), 75);
+    assert.equal(await newToken.unlockedBalanceOf(user), 5);
 
     // ``convert()`` is executed and user is charged for a fee
-    await this.recipient.methods.convert(10).send({from: user});
+    await this.recipient.methods.convert(5).send({from: user});
 
     // assert proper balance
     assert.equal(await oldToken.balanceOf(user), 10);
     assert.equal(await newToken.balanceOf(user), 70);
     assert.equal(await newToken.balanceOf(reserve), 30);
+
+    // user was charged for a conversion fee, no new tokens left
+    assert.equal(await newToken.unlockedBalanceOf(user), 0);
+
+    await Utils.assertGSNFail(this.recipient.methods.convert(5).send({from: user}));
+    await this.recipient.methods.convert(10).send({from: user});
+    assert.equal(await oldToken.balanceOf(user), 0);
+    assert.equal(await newToken.balanceOf(user), 70);
+    // user was charged for a conversion fee, no new tokens left
+    assert.equal(await newToken.unlockedBalanceOf(user), 0);
+    assert.equal(await newToken.balanceOf(reserve), 40);
+
   });
 
   it("convert via GSN call success test", async function() {

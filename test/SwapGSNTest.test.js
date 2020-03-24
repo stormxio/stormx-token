@@ -61,7 +61,6 @@ contract("Token swap GSN test", async function(accounts) {
     this.recipient.setProvider(gsnDevProvider);
 
     await newToken.initialize(this.recipient.options.address, {from: owner});
-    await newToken.addGSNRecipient(this.recipient.options.address, {from: owner});
 
     // initialize swap and open token migration
     await oldToken.transferOwnership(this.recipient.options.address, {from: owner});

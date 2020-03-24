@@ -125,7 +125,7 @@ For any contract inheriting from this contract, it will try to charge users for 
 
 The existing token smart contract is only able to receive transactions directly. The new token smart contract and the swap contract is GSN-capable and can receive transactions from GSN, as well as they will be callable directly by users. Each accepted meta transaction via GSN will charge the user a certain amount of StormX tokens (see requirement R2-2), with the default value being 10 StormX tokens. A setter for this value is provided so that StormX can change it at any point.
 
-In the future, for any contract that needs to support GSN and charge users in the new StormXToken, it can simply inherit from ``StormXGSNRecipient``. The contract owner of ``StormXToken`` needs to call ``addGSNRecipient(address recipient)`` for this recipient to successfully charge users. Meanwhile, if any valid GSN recipients are deleted by ``StormXToken`` contract owner, they will not be able to charge users successfully.
+In the future, for any contract that needs to support GSN and charge users in the new StormXToken, it can simply inherit from ``StormXGSNRecipient``. However, for these recipients to successfully charge users, users' approvals are required before charging.
 
 #### Centralization of power
 The contract `StormXGSNRecipient.sol` uses ownable pattern and has a state variable `owner` to designate the address with special privileges. In this contract, owner and only owner has the privileged access to set `chargeFee` and `stormXReserve` arbitrarily.
@@ -141,7 +141,7 @@ StormXToken is the new token contract implemented for StormX. It supports standa
 
 #### Standard ERC20 interface
 
-StormXToken is in compliance with ERC20 as described in ​eip-20.md​. This token contract is ownable and mintable. Caller of the constructor becomes the owner and only the owner can add minters for this token contract. 
+StormXToken is in compliance with ERC20 as described in ​eip-20.md​. This token contract is ownable and mintable.
 
 #### Allowance Double-Spend Exploit
 Allowance double-spend exploit is mitigated in this contract with functions `increaseAllowance()` and `decreaseAllowance()`.
@@ -198,9 +198,7 @@ StormXToken contract inherits from ``StormXGSNRecipient`` (see StormXGSNRecipien
 
 By inheriting from ``StormXGSNRecipient``, the contract can charge users in StormX tokens for any accepted GSN relayed calls , and the charged tokens will be transferred to the specified StormX’s reserve address (see Charging section under StormXGSNRecipient).
 
-For any contract inheriting from ``StormXGSNRecipient`` that will charge users, it must be added as GSNRecipient in this token contract, otherwise the charging will fail. If a valid GSNRecipient is deleted by the contract owner, it will also fail to charge users for any fees. Only the contract owner can call the methods ``addGSNRecipient(address recipient)`` and ``deleteGSNRecipient(address recipient)`` to add and delete GSNRecipient respectively.
-
-Note: For a contract that inherits from ``StormXGSNRecipient`` and is deployed at address ``recipient``, if the user invokes ``StormXToken.approve(recipient, chargeFee)`` before the GSN relayed call, this contract can successfully charge the user for a GSN relayed call.
+As per current implementation, only `StormXToken.sol` and `Swap.sol` can charge users for a fee without users' explicit approval. In the future, any contract that inherits from ``StormXGSNRecipient`` and is deployed at address ``recipient``, it can charge user successfully only if the user invokes ``StormXToken.approve(recipient, chargeFee)`` before the GSN relayed call.
 
 ### Swap
 
@@ -242,15 +240,11 @@ The following order is strictly required when deploying relevant contracts and s
 
    - verify that StormXAdmin is the owner of ``Swap`` contract.
 
-3. StormXAdmin invokes the function ``StormXToken.initialize(Swap.address)`` so that only Swap can mint new tokens during token swap.
+3. StormXAdmin invokes the function ``StormXToken.initialize(Swap.address)`` for `Swap.sol` to mint new tokens during token swap and charge users for GSN relayed call
 
-   - verify that ``Swap.address`` is added as the valid minter address of ``StormXToken`` successfully.
+   - verify that the state variable ``swap`` is set to ``Swap.address`` properly in ``StormXToken.sol``
 
-4. StormXAdmin invokes the function ``StormXToken.addGSNRecipient(Swap.address)`` so that Swapcan charge users for GSN relayed calls.
-
-   - verify that ``Swap.address`` is added as a valid GSN recipient address of ``StormXToken`` successfully.
-
-5. StormXAdmin invokes the functions ``StormToken.transferOwnership(Swap.address)`` and ``Swap.initialize()`` sequentially so that ``Swap`` can destroy old tokens for users during token swap.
+4. StormXAdmin invokes the functions ``StormToken.transferOwnership(Swap.address)`` and ``Swap.initialize()`` sequentially so that ``Swap`` can destroy old tokens for users during token swap.
 
    - verify that ``Swap`` contract is the owner of the old token contract.
 

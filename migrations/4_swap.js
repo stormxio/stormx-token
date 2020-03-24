@@ -33,20 +33,6 @@ module.exports = async function(deployer, network, accounts) {
           gas: networkConfig.gas
         }
       }))
-    .then(async() => await utils.callMethod({
-      network,
-      artifact: StormX,
-      contractName: 'StormXToken',
-      methodName: 'addGSNRecipient', // swap can charge users for GSN fees
-      methodArgsFn: () => ([
-        Swap.address,
-      ]),
-      sendArgs: {
-          from: ownerAddress, 
-          gasPrice: networkConfig.gasPrice,
-          gas: networkConfig.gas
-        }
-      }))
     // mint some old tokens for testing before transferring out ownership
     .then(async() => await utils.callMethod({
       network,

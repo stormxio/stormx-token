@@ -1,23 +1,21 @@
 pragma solidity 0.5.16;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Mintable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./StormXGSNRecipient.sol";
 
 
 contract StormXToken is 
   StormXGSNRecipient,         
-  ERC20Mintable, 
+  ERC20,
   ERC20Detailed("StormX", "STMX", 18) {    
 
   using SafeMath for uint256;
 
   bool public transfersEnabled;
   bool public initialized = false;
-  address public validMinter;
-
-  mapping(address => bool) public recipients;
+  address public swap;
 
   // Variables for staking feature
   mapping(address => uint256) public lockedBalanceOf;
@@ -25,11 +23,7 @@ contract StormXToken is
   event TokenLocked(address indexed account, uint256 amount);
   event TokenUnlocked(address indexed account, uint256 amount);
   event TransfersEnabled(bool newStatus);
-  event ValidMinterAdded(address minter);
-
-  // Testing that GSN is supported properly 
-  event GSNRecipientAdded(address recipient);
-  event GSNRecipientDeleted(address recipient);
+  event SwapAddressAdded(address swap);
 
   modifier transfersAllowed {
     require(transfersEnabled, "Transfers not available");
@@ -44,32 +38,7 @@ contract StormXToken is
   constructor(address reserve) 
     // solhint-disable-next-line visibility-modifier-order
     StormXGSNRecipient(address(this), reserve) public { 
-      recipients[address(this)] = true;
-      emit GSNRecipientAdded(address(this));
-      transfersEnabled = true;
     }
-
-  /**
-   * @dev Adds GSN recipient that will charge users in this StormX token
-   * @param recipient address of the new recipient
-   * @return success status of the adding
-   */
-  function addGSNRecipient(address recipient) public onlyOwner returns (bool) {
-    recipients[recipient] = true;
-    emit GSNRecipientAdded(recipient);
-    return true;
-  }
-
-  /**
-   * @dev Deletes a GSN recipient from the list
-   * @param recipient address of the recipient to be deleted
-   * @return success status of the deleting
-   */
-  function deleteGSNRecipient(address recipient) public onlyOwner returns (bool) {
-    recipients[recipient] = false;
-    emit GSNRecipientDeleted(recipient);
-    return true;
-  }
 
   /**
    * @param account address of the user this function queries unlocked balance for
@@ -125,7 +94,7 @@ contract StormXToken is
     // if the msg.sender is charging ``sender`` for a GSN fee
     // allowance does not apply
     // so that no user approval is required for GSN calls
-    if (recipients[_msgSender()] == true) {
+    if (_msgSender() == address(this) || _msgSender() == swap) {
       _transfer(sender, recipient, amount);
       return true;
     } else {
@@ -174,25 +143,25 @@ contract StormXToken is
     return true;
   }
 
-  function mint(address account, uint256 amount) public onlyMinter returns (bool) {
+  function mint(address account, uint256 amount) public {
     require(initialized, "The contract is not initialized yet");
-    require(_msgSender() == validMinter, "not authorized to mint");
-    super.mint(account, amount);
-    return true;
+    require(_msgSender() == swap, "not authorized to mint");
+    _mint(account, amount);
   }
 
   /**
    * @dev Initializes this contract
    *      Sets address ``swap`` as the only valid minter for this token
    *      Note: must be called before token migration opens in ``Swap.sol``
-   * @param swap address of the deployed contract ``Swap.sol``
+   * @param _swap address of the deployed contract ``Swap.sol``
    */
-  function initialize(address swap) public onlyOwner {
+  function initialize(address _swap) public onlyOwner {
     require(!initialized, "cannot initialize twice");
-    require(swap != address(0), "invalid swap address");
-    addMinter(swap);
-    validMinter = swap;
+    require(_swap != address(0), "invalid swap address");
+    swap = _swap;
+    transfersEnabled = true;
+    emit TransfersEnabled(true);
     initialized = true;
-    emit ValidMinterAdded(swap);
+    emit SwapAddressAdded(_swap);
   }
 }

@@ -102,7 +102,6 @@ contract("StormX GSN recipient test", async function(accounts) {
     assert.equal(await this.recipient.methods.chargeFee().call(), 5);
 
     // owner can set charge fee directly
-
     await this.recipient.methods.setChargeFee(50).send({from: owner, useGSN: false});
     assert.equal(await this.recipient.methods.chargeFee().call(), 50);
     // not charged since no GSN call invoked

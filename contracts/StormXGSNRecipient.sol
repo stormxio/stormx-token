@@ -13,7 +13,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   // Variables and constants for supporting GSN
   uint256 constant INSUFFICIENT_BALANCE = 11;
   uint256 public chargeFee;
-  address public stormXReserve; 
+  address public stormXReserve;
 
   // importing ``StormXToken.sol`` results in infinite loop
   // using only an interface
@@ -22,6 +22,10 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   event StormXReserveSet(address newAddress);
   event ChargeFeeSet(uint256 newFee);
 
+  /**
+   * @param tokenAddress address of `StormXToken.sol`
+   * @param reserve address that receives GSN charge fee
+   */
   constructor(address tokenAddress, address reserve) public {
     require(tokenAddress != address(0), "Invalid token address");
     require(reserve != address(0), "Invalid reserve address");
@@ -32,6 +36,33 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     chargeFee = 10 * (10 ** 18);
   }
 
+  /**
+   * Note: the documentation is copied from
+   * `openzeppelin-contracts/contracts/GSN/IRelayRecipient.sol`
+   * @dev Called by {IRelayHub} to validate
+   * if this recipient accepts being charged for a relayed call.
+   * Note that the recipient will be charged regardless of the execution result of the relayed call
+   * (i.e. if it reverts or not).
+   *
+   * The relay request was originated by `from` and will be served by `relay`.
+   * `encodedFunction` is the relayed call calldata,
+   * so its first four bytes are the function selector.
+   * The relayed call will be forwarded `gasLimit` gas,
+   * and the transaction executed with a gas price of at least `gasPrice`.
+   * `relay`'s fee is `transactionFee`,
+   * and the recipient will be charged at most `maxPossibleCharge` (in wei).
+   * `nonce` is the sender's (`from`) nonce for replay attack protection in {IRelayHub},
+   * and `approvalData` is a optional parameter that can be used to hold a signature
+   * over all or some of the previous values.
+   *
+   * Returns a tuple, where the first value is used to indicate approval (0)
+   * or rejection (custom non-zero error code, values 1 to 10 are reserved)
+   * and the second one is data to be passed to the other {IRelayRecipient} functions.
+   *
+   * {acceptRelayedCall} is called with 50k gas: if it runs out during execution,
+   * the request will be considered
+   * rejected. A regular revert will also trigger a rejection.
+   */
   function acceptRelayedCall(
     address relay,
     address from,
@@ -57,7 +88,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   /**
    * @dev Sets the address of StormX's reserve
    * @param newReserve the new address of StormX's reserve
-   * @return success status of the setting 
+   * @return success status of the setting
    */
   function setStormXReserve(address newReserve) public onlyOwner returns (bool) {
     require(newReserve != address(0), "Invalid reserve address");
@@ -69,7 +100,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
  /**
    * @dev Sets the charge fee for GSN calls
    * @param newFee the new charge fee
-   * @return success status of the setting 
+   * @return success status of the setting
    */
   function setChargeFee(uint256 newFee) public onlyOwner returns (bool) {
     chargeFee = newFee;
@@ -111,7 +142,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
       return (true, chargeBefore);
     }
   }
-  
+
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {
     (address user, bool chargeBefore) = abi.decode(context, (address, bool));
     // charge the user with specified amount of fee
@@ -123,9 +154,9 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   }
 
   function _postRelayedCall(
-    bytes memory context, 
-    bool success, 
-    uint256 actualCharge, 
+    bytes memory context,
+    bool success,
+    uint256 actualCharge,
     bytes32 preRetVal
   ) internal {
     (address user, bool chargeBefore) = abi.decode(context, (address, bool));
@@ -134,9 +165,9 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     }
   }
 
-  /** 
+  /**
    * @dev Reads a bytes4 value from a position in a byte array.
-   * Note: for reference, see source code 
+   * Note: for reference, see source code
    * https://etherscan.io/address/0xD216153c06E857cD7f72665E0aF1d7D82172F494#code
    * @param b Byte array containing a bytes4 value.
    * @param index Index in byte array of bytes4 value.
@@ -167,9 +198,9 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     return result;
   }
 
-  /** 
+  /**
    * @dev Reads a bytes32 value from a position in a byte array.
-   * Note: for reference, see source code 
+   * Note: for reference, see source code
    * https://etherscan.io/address/0xD216153c06E857cD7f72665E0aF1d7D82172F494#code
    * @param b Byte array containing a bytes32 value.
    * @param index Index in byte array of bytes32 value.
@@ -178,10 +209,10 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   function readBytes32(
     bytes memory b,
     uint256 index
-  ) 
+  )
     internal
     pure
-    returns (bytes32 result) 
+    returns (bytes32 result)
   {
     require(
       b.length >= index + 32,
@@ -198,9 +229,9 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     return result;
   }
   
-  /** 
+  /**
    * @dev Reads a uint256 value from a position in a byte array.
-   * Note: for reference, see source code 
+   * Note: for reference, see source code
    * https://etherscan.io/address/0xD216153c06E857cD7f72665E0aF1d7D82172F494#code
    * @param b Byte array containing a uint256 value.
    * @param index Index in byte array of uint256 value.
@@ -219,7 +250,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
 
  /**
   * @dev extract parameter from encoded-function block.
-  * Note: for reference, see source code 
+  * Note: for reference, see source code
   * https://etherscan.io/address/0xD216153c06E857cD7f72665E0aF1d7D82172F494#code
   * https://solidity.readthedocs.io/en/develop/abi-spec.html#formal-specification-of-the-encoding
   * note that the type of the parameter must be static.

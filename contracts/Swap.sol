@@ -14,7 +14,7 @@ contract Swap is StormXGSNRecipient {
   StormXToken public newToken;
   bool public initialized;
 
-  // Variables for supporing token swap
+  // Variables for supporting token swap
   bool public migrationOpen;
   uint256 public initializeTime;
 

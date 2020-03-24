@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./StormXGSNRecipient.sol";
 
 
-contract StormXToken is 
-  StormXGSNRecipient,         
+contract StormXToken is
+  StormXGSNRecipient,
   ERC20,
-  ERC20Detailed("StormX", "STMX", 18) {    
+  ERC20Detailed("StormX", "STMX", 18) {
 
   using SafeMath for uint256;
 
@@ -29,15 +29,15 @@ contract StormXToken is
     require(transfersEnabled, "Transfers not available");
     _;
   }
-  
+
   /**
-   * @param reserve address of the StormX's reserve that receives
+   * @param reserve address of the StormX's reserve that receives GSN charge fee
    * GSN charged fees and remaining tokens
    * after the token migration is closed
    */
-  constructor(address reserve) 
+  constructor(address reserve)
     // solhint-disable-next-line visibility-modifier-order
-    StormXGSNRecipient(address(this), reserve) public { 
+    StormXGSNRecipient(address(this), reserve) public {
     }
 
   /**
@@ -52,10 +52,10 @@ contract StormXToken is
   /**
    * @dev Locks specified amount of tokens for the user
    *      Locked tokens are not manipulable until being unlocked
-   *      Locked tokens are still reported as owned by the user 
+   *      Locked tokens are still reported as owned by the user
    *      when ``balanceOf()`` is called
    * @param amount specified amount of tokens to be locked
-   * @return success status of the locking 
+   * @return success status of the locking
    */
   function lock(uint256 amount) public returns (bool) {
     address account = _msgSender();
@@ -69,7 +69,7 @@ contract StormXToken is
    * @dev Unlocks specified amount of tokens for the user
    *      Unlocked tokens are manipulable until being locked
    * @param amount specified amount of tokens to be unlocked
-   * @return success status of the unlocking 
+   * @return success status of the unlocking
    */
   function unlock(uint256 amount) public returns (bool) {
     address account = _msgSender();
@@ -78,7 +78,7 @@ contract StormXToken is
     emit TokenUnlocked(account, amount);
     return true;
   }
-  
+
   /**
    * @dev The only difference from standard ERC20 ``transferFrom()`` is that
    *     it only succeeds if the sender has enough unlocked tokens
@@ -116,16 +116,16 @@ contract StormXToken is
 
   /**
    * @dev Transfers tokens in batch
-   * @param recipients an array of address of the recipient
+   * @param recipients an array of recipient addresses
    * @param values an array of specified amount of tokens to be transferred
    * @return success status of the batch transferring
    */
   function transfers(
-    address[] memory recipients, 
+    address[] memory recipients,
     uint256[] memory values
   ) public transfersAllowed returns (bool) {
     require(recipients.length == values.length, "Input lengths do not match");
-    
+
     for (uint256 i = 0; i < recipients.length; i++) {
       transfer(recipients[i], values[i]);
     }
@@ -133,7 +133,7 @@ contract StormXToken is
   }
 
   /**
-   * @dev Enables the method ``transfers()`` if ``enable=true``, 
+   * @dev Enables the method ``transfers()`` if ``enable=true``,
    * and disables ``transfers()`` otherwise
    * @param enable the expected new availability of the method ``transfers()``
    */

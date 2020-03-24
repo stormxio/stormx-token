@@ -117,11 +117,11 @@ Only the contract owner can call the methods ``setChargeFee(uint256 newFee)`` an
 For any contract inheriting from this contract, it will try to charge users for every GSN relayed call.
 1. This contract accepts the GSN relayed call if the user has enough unlocked token balance and will charge user before the called function is executed.
 
-2. If the user does not have enough unlocked token balance and is calling the function ``convert(uint256 amount)``, this contract accepts the GSN relayed call and charges users only if they will have enough unlocked new token balance after ``convert(uint256 amount)`` is executed, i.e. ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``.
+2. If the user does not have enough unlocked token balance and is calling the function ``convert(uint256 amount)``, this contract accepts the GSN relayed call only if they will have enough unlocked new token balance after ``convert(uint256 amount)`` is executed, i.e. ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``. After `convert()` is executed successfully, the user will be charged for the fee.
 
 3. If neither of the previous is satisfied, rejects the relayed call.
 
-#### GSN Support
+#### Gas Station Network (GSN) Support
 
 The existing token smart contract is only able to receive transactions directly. The new token smart contract and the swap contract is GSN-capable and can receive transactions from GSN, as well as they will be callable directly by users. Each accepted meta transaction via GSN will charge the user a certain amount of StormX tokens (see requirement R2-2), with the default value being 10 StormX tokens. A setter for this value is provided so that StormX can change it at any point.
 

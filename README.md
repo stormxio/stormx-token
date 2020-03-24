@@ -117,7 +117,7 @@ Only the contract owner can call the methods ``setChargeFee(uint256 newFee)`` an
 For any contract inheriting from this contract, it will try to charge users for every GSN relayed call.
 1. This contract accepts the GSN relayed call if the user has enough unlocked token balance and will charge user before the called function is executed.
 
-2. If the user does not have enough unlocked token balance and is calling the function ``convert(uint256 amount)``, this contract accepts the GSN relayed call and charges users only if they will have enough unlocked new token balance after ``convert(uint256 amount)`` is executed, i.e. ``amount >= chargeFee``.
+2. If the user does not have enough unlocked token balance and is calling the function ``convert(uint256 amount)``, this contract accepts the GSN relayed call and charges users only if they will have enough unlocked new token balance after ``convert(uint256 amount)`` is executed, i.e. ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``.
 
 3. If neither of the previous is satisfied, rejects the relayed call.
 
@@ -281,7 +281,7 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 1. The user calls the function ``convert(amount)`` with signed signature to GSN.
 
-2. The Swap contract accepts the relayed call from GSN and execute ``convert(amount)`` if the user has enough unlocked new StormX token balance or ``amount >= chargeFee``.
+2. The Swap contract accepts the relayed call from GSN and execute ``convert(amount)`` if the user has enough unlocked new StormX token balance or ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``.
 
 3. The contract charges the user by ``chargeFee`` if the user has enough unlocked token balance right now, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``. Otherwise, the charging will be in step 8 if the transaction succeeds.
 
@@ -358,7 +358,7 @@ function acceptRelayedCall(
 
 5. Otherwise, if the user is not calling ``convert(uint256 amount)``, rejects the relayed call with the ``errorCode``, i.e. ``INSUFFICIENT_BALANCE``.
 
-6. If the user is calling ``convert(uint256 amount)`` and ``amount >= chargeFee``, accepts the call and charge the user after ``convert()`` is executed successfully.
+6. If the user is calling ``convert(uint256 amount)`` and ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``, accepts the call and charge the user after ``convert()`` is executed successfully.
 
 7. Rejects the call with ``errorcode`` otherwise.
 

@@ -127,6 +127,14 @@ The existing token smart contract is only able to receive transactions directly.
 
 In the future, for any contract that needs to support GSN and charge users in the new StormXToken, it can simply inherit from ``StormXGSNRecipient``. The contract owner of ``StormXToken`` needs to call ``addGSNRecipient(address recipient)`` for this recipient to successfully charge users. Meanwhile, if any valid GSN recipients are deleted by ``StormXToken`` contract owner, they will not be able to charge users successfully.
 
+#### Centralization of power
+The contract `StormXGSNRecipient.sol` uses ownable pattern and has a state variable `owner` to designate the address with special privileges. In this contract, owner and only owner has the privileged access to set `chargeFee` and `stormXReserve` arbitrarily.
+
+Note: `StormXToken.sol` and `Swap.sol` both inherit from this contract and are using ownable pattern. Some functions are only available to the contract owner, and users should be aware of those owner-only functions stated in sections `StormXToken` and `Swap`.
+
+#### Transaction order dependencies
+There exist transaction order dependencies between ``setChargeFee()`` and functions that read ``chargeFee``. One possible case that users should be aware of is that ``chargeFee`` is increased after it is read and before the meta transaction is executed. In this case, the meta transaction may fail if the user does not have enough unlocked token balance against the new ``chargeFee``.
+
 ### StormXToken
 
 StormXToken is the new token contract implemented for StormX. It supports standard ERC20 interface, transferring in batch, staking feature and GSN relayed calls.
@@ -134,6 +142,11 @@ StormXToken is the new token contract implemented for StormX. It supports standa
 #### Standard ERC20 interface
 
 StormXToken is in compliance with ERC20 as described in ​eip-20.md​. This token contract is ownable and mintable. Caller of the constructor becomes the owner and only the owner can add minters for this token contract. 
+
+#### Allowance Double-Spend Exploit
+Allowance double-spend exploit is mitigated in this contract with functions `increaseAllowance()` and `decreaseAllowance()`.
+
+However, community agreement on an ERC standard that would protect against this exploit is still pending. Users should be aware of this exploit when interacting with this contract.
 
 #### Mint
 The function ``mint()`` is overriden in this contract to prevent contract owner from minting tokens arbitrarily.

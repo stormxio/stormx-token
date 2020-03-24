@@ -38,7 +38,7 @@ contract("StormX token test", async function(accounts) {
   it("initialize success test", async function() {
     stormX = await StormX.new(reserve, {from: owner});
     await stormX.initialize(mockSwap, {from: owner});
-    assert.equal(await stormX.validMinter(), mockSwap);
+    assert.equal(await stormX.swap(), mockSwap);
     assert.isTrue(await stormX.initialized());
   });
 
@@ -314,30 +314,5 @@ contract("StormX token test", async function(accounts) {
     await stormX.transfers(recipients, values, {from: user});
     assert.equal(await stormX.balanceOf(user), 96);
     assert.equal(await stormX.balanceOf(receiver), 4);
-  });
-
-  it("owner and only owner can add valid StormX GSN recipient test", async function() {
-    let recipient = accounts[7];
-    // user fails to add stormx GSN recipient
-    await Utils.assertTxFail(stormX.addGSNRecipient(recipient, {from: user}));
-
-    // owner can add stormx GSN recipient
-    await stormX.addGSNRecipient(recipient, {from: owner});
-    assert.isTrue(await stormX.recipients(recipient));
-  });
-
-  it("owner and only owner can delete valid StormX GSN recipient test", async function() {
-    let recipient = accounts[7];
-    // owner can add stormx GSN recipient
-    await stormX.addGSNRecipient(recipient, {from: owner});
-    assert.isTrue(await stormX.recipients(recipient));
-
-    // user fails to delete stormx GSN recipient
-    await Utils.assertTxFail(stormX.deleteGSNRecipient(recipient, {from: user}));
-    assert.isTrue(await stormX.recipients(recipient));
-
-    // owner can delete stormx GSN recipient
-    await stormX.deleteGSNRecipient(recipient, {from: owner});
-    assert.isFalse(await stormX.recipients(recipient));
   });
 });

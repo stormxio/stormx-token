@@ -3,8 +3,8 @@ const truffleConfig = require('../truffle.js');
 const utils = require('./Utils.js');
 
 
-module.exports = async function(deployer, network, accounts) {
-  let result = await utils.canDeploy(network, 'StormToken');
+module.exports = function(deployer, network, accounts) {
+  let result = utils.canDeploy(network, 'StormToken');
   if (!result) {
     return;
   } // skip the deployment in development
@@ -13,5 +13,5 @@ module.exports = async function(deployer, network, accounts) {
   const ownerAddress = networkConfig.account || accounts[0];
 
   deployer
-    .then(async () => await deployer.deploy(OldToken, ownerAddress))
+    .then(() => deployer.deploy(OldToken, ownerAddress))
 };

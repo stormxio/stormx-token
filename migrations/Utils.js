@@ -2,7 +2,7 @@ const truffle = require('../truffle.js');
 const path = require("path");
 const web3 = require('web3');
 
-async function canDeploy(network, contractName) {
+function canDeploy(network, contractName) {
   if (network === 'development') {
     return false;
   }

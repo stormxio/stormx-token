@@ -1,11 +1,11 @@
 # stormx-token
 
 ## addresses of deployed contract on ropsten network
-``StormXToken``: 0x2fced9221ad53bb04cbd810131e5165d16218da0 (the new token)
+``StormXToken``: 0xeDA2380b8B8475368FF31812daaD84b5bA488951 (the new token)
 
-``StormToken``:  0xcfb25559ff50d4d1359c0d325a321c7947f44619 (the old token)
+``StormToken``:  0x74E5e4B81377fCe8990C82AFfA7AA159fB16A7cb (the old token)
 
-``Swap``: 0x946587f6e039b7e89749fcb14987833582f1ff87
+``Swap``: 0xf29bFDc0e48D69d2e07647470Ca34f7b02E2ec6c
 
 
 

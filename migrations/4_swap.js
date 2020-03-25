@@ -4,8 +4,8 @@ const Swap = artifacts.require("Swap");
 const truffleConfig = require('../truffle.js');
 const utils = require('./Utils.js');
 
-module.exports = async function(deployer, network, accounts) {
-  let result = await utils.canDeploy(network, 'Swap');
+module.exports = function(deployer, network, accounts) {
+  let result = utils.canDeploy(network, 'Swap');
   if (!result) {
     return;
   } // skip the deployment in development
@@ -15,10 +15,9 @@ module.exports = async function(deployer, network, accounts) {
   const reserveAddress = networkConfig.reserve || accounts[1];
   const stormXAddress = StormX.address;
   const oldTokenAddress = OldToken.address;
-  const mintAmount = 10000 * (10 ** 18);
 
   deployer
-    .then(async () => await deployer.deploy(Swap, oldTokenAddress, stormXAddress, reserveAddress))
+    .then(() => deployer.deploy(Swap, oldTokenAddress, stormXAddress, reserveAddress))
     .then(async() => await utils.callMethod({
       network,
       artifact: StormX,
@@ -41,7 +40,9 @@ module.exports = async function(deployer, network, accounts) {
       methodName: 'mintTokens',
       methodArgsFn: () => ([
         ownerAddress,
-        mintAmount,
+        // 10,000,000,000 Storm Tokens
+        // the same amount as current total supply of old stormx token
+        "10000000000000000000000000000",
       ]),
       sendArgs: {
           from: ownerAddress,

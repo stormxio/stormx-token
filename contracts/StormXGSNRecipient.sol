@@ -148,7 +148,10 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     // charge the user with specified amount of fee
     // if the user is not calling ``convert()``
     if (chargeBefore) {
-      token.transferFrom(user, stormXReserve, chargeFee);
+      require(
+        token.transferFrom(user, stormXReserve, chargeFee),
+        "Charging fails before executing the function"
+      );
     }
     return "";
   }
@@ -161,7 +164,10 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   ) internal {
     (address user, bool chargeBefore) = abi.decode(context, (address, bool));
     if (!chargeBefore) {
-      token.transferFrom(user, stormXReserve, chargeFee);
+      require(
+        token.transferFrom(user, stormXReserve, chargeFee),
+        "Charging fails after executing the function"
+      );
     }
   }
 

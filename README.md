@@ -1,4 +1,4 @@
-# stormx-token
+# Stormx Token and Swap
 
 ## addresses of deployed contract on ropsten network
 ``StormXToken``: 0xeDA2380b8B8475368FF31812daaD84b5bA488951 (the new token)
@@ -104,60 +104,61 @@ The following requirements were gathered and agreed upon before the development:
 ## Technical Executions
 Quantstamp developed the contracts according to the requirements using Solidity and Javascript for testing. This section outlines the technical solution.
 
-### StormXGSNRecipient
+### StormXGSNRecipient.sol
 
-This contract is an ownable contract for supporting GSN relayed calls and charging users for accepted GSN calls. Both ``StormXToken`` and ``Swap`` inherit from this contract. For every accepted GSN relayed call, the user will be charged for a specified amount of StormXTokens, i.e.``chargeFee``, and the charged tokens will be transferred to the specified address ``stormXReserve``.  If the user does not have enough unlocked token balance, the GSN relayed call will be rejected and the user will not be charged at all.
+This contract is an ownable contract that supports GSN relayed calls and charges users for accepted GSN calls. Both ``StormXToken`` and ``Swap`` inherit from this contract. For every accepted GSN relayed call, the user will be charged a specified amount of STMX (`StormXToken.sol`), a so-called ``chargeFee``, and the charged tokens will be transferred to the specified address ``stormXReserve``.  If the user does not have enough unlocked STMX tokens, and the transaction will not result in having such a balance by swapping more STORM for STMX, the GSN relayed call will be rejected and the user will not be charged at all.
 
-The function ``acceptRelayedCall()`` implemented in ``StormXGSNRecipient.sol`` decides whether to accept a relayed call from GSN or not. As per current implementation, if the user has no less than specified charge fee ``chargeFee``, the relayed call will be accepted and the user will be charged the specified fee.
+The function ``acceptRelayedCall()`` implemented in ``StormXGSNRecipient.sol`` decides whether to accept a relayed call from GSN or not. If the user has at least the specified charge fee ``chargeFee`` of STMX, or if the user is converting additional STORM tokens to STMX that will result in sufficiently large balance, the relayed call will be accepted and the user will be charged the specified fee.
 
 Only the contract owner can call the methods ``setChargeFee(uint256 newFee)`` and ``setStormXReserve(address newReserve)`` to set ``chargeFee`` and ``stormXReserve`` respectively. If ``chargeFee`` and ``stormXReserve`` are set successfully, events ``ChargeFeeSet(uint256 newFee)`` and ``StormXReserveSet(address newAddress)`` will be emitted respectively.
 
-#### Charging
+#### Charging Details
 
-For any contract inheriting from this contract, it will try to charge users for every GSN relayed call.
-1. This contract accepts the GSN relayed call if the user has enough unlocked token balance and will charge user before the called function is executed.
+For any contract inheriting from this contract (both `StormXToken.sol` and `Swap.sol`), the contract will try to charge users for every GSN relayed call.
 
-2. If the user does not have enough unlocked token balance and is calling the function ``convert(uint256 amount)``, this contract accepts the GSN relayed call only if they will have enough unlocked new token balance after ``convert(uint256 amount)`` is executed, i.e. ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``. After `convert()` is executed successfully, the user will be charged for the fee.
-
-3. If neither of the previous is satisfied, rejects the relayed call.
+1. This contract accepts the GSN relayed call if the user has enough unlocked token balance, and will charge user before the called function is executed.
+2. If the user does not have enough unlocked token balance and is calling the function ``convert(uint256 amount)``, this contract accepts the GSN relayed call only if they will have enough unlocked new token balance after ``convert(uint256 amount)`` is executed, i.e., ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``. After `convert()` is executed successfully, the user will be charged the fee.
+3. If neither of the previous is satisfied, the contract rejects the relayed call.
 
 #### Gas Station Network (GSN) Support
 
-The existing token smart contract is only able to receive transactions directly. The new token smart contract and the swap contract is GSN-capable and can receive transactions from GSN, as well as they will be callable directly by users. Each accepted meta transaction via GSN will charge the user a certain amount of StormX tokens (see requirement R2-2), with the default value being 10 StormX tokens. A setter for this value is provided so that StormX can change it at any point.
+The existing token smart contract (STORM) is only able to receive transactions directly. The new token smart contract (STMX) and the swap contract is GSN-capable and can receive transactions from GSN (they are also callable directly by the users). Each accepted meta transaction via GSN charges the user a certain amount of STMX tokens (see requirement R2-2), with the default value being 10 STMX tokens. A setter for this value is provided so that StormX can change it at any point.
 
-In the future, for any contract that needs to support GSN and charge users in the new StormXToken, it can simply inherit from ``StormXGSNRecipient``. However, for these recipients to successfully charge users, users' approvals are required before charging.
+In the future, for any contract that needs to support GSN and charge users STMX, such a contract can simply inherit from ``StormXGSNRecipient``. However, for such new recipients to successfully charge users, users' approvals will be required before charging.
 
-#### Centralization of power
+#### Centralization of Power
 The contract `StormXGSNRecipient.sol` uses ownable pattern and has a state variable `owner` to designate the address with special privileges. In this contract, owner and only owner has the privileged access to set `chargeFee` and `stormXReserve` arbitrarily.
 
 Note: `StormXToken.sol` and `Swap.sol` both inherit from this contract and are using ownable pattern. Some functions are only available to the contract owner, and users should be aware of those owner-only functions stated in sections `StormXToken` and `Swap`.
 
-#### Transaction order dependencies
-There exist transaction order dependencies between ``setChargeFee()`` and functions that read ``chargeFee``. One possible case that users should be aware of is that ``chargeFee`` is increased after it is read and before the meta transaction is executed. In this case, the meta transaction may fail if the user does not have enough unlocked token balance against the new ``chargeFee``.
+#### Transaction Order Dependencies
+There exist transaction order dependencies between ``setChargeFee()`` and functions that read ``chargeFee``. One possible case that users should be aware of is that ``chargeFee`` can be increased after it is read and before the meta transaction is executed. In such a case, the meta transaction will be charged the updated ``chargeFee``. The transaction will fail if the user does not have enough unlocked token balance against the new ``chargeFee``.
 
-### StormXToken
+### StormXToken.sol
 
-StormXToken is the new token contract implemented for StormX. It supports standard ERC20 interface, transferring in batch, staking feature and GSN relayed calls.
+`StormXToken.sol` is the new token contract implemented for StormX's STMX token. It supports the standard ERC20 interface, transferring in batches, staking, and GSN relayed calls.
 
 #### Standard ERC20 interface
 
 StormXToken is in compliance with ERC20 as described in ​eip-20.md​. This token contract is ownable and mintable.
 
 #### Allowance Double-Spend Exploit
-Allowance double-spend exploit is mitigated in this contract with functions `increaseAllowance()` and `decreaseAllowance()`.
+Allowance double-spend exploit is mitigated by functions `increaseAllowance()` and `decreaseAllowance()`.
 
-However, community agreement on an ERC standard that would protect against this exploit is still pending. Users should be aware of this exploit when interacting with this contract.
+However, a community agreement on an ERC standard that would protect against this exploit is still pending. Users should be aware of this exploit when interacting with this contract.
 
 #### Mint
-The function ``mint()`` is overriden in this contract to prevent contract owner from minting tokens arbitrarily.
-There is only one valid minter which should be set by the function ``StormXToken.initialize(address swap) public onlyOwner``.
-This function ``StormXToken.initialize()`` can only be called once and is only available to contract owner. After this function is invoked, ``swap`` will be the only address that can call function ``mint()``.
+Function ``mint()`` is overriden in this contract to prevent contract owner from minting tokens arbitrarily.
+There is only one valid minter set by the function ``StormXToken.initialize(address swap) public onlyOwner``, and it is intended to be the `Swap.sol` contract.
+Function ``StormXToken.initialize()`` can only be called once and is only available to the contract owner. After this function is invoked, ``swap`` will forever be the only address that can call function ``mint()``.
 
 Note: to support token migration, ``StormXToken.initialize()`` must be called before any ``Swap.convert()`` function call is executed.
 
-#### Transferring in batch
+#### Transferring in Batches
 
-Anyone can call the method ``transfers()`` to perform multiple transferring in a single function call when transfers is allowed.
+Anyone can call the method ``transfers()`` to perform multiple transfers in a single function call (only when calls to `transfers()` are allowed). The contract owner can enable/disable the method ``transfers()`` by invoking method ``enableTransfers(bool enable)``. It enables method ``transfers()``for batch transfers if ``enable=true``, and disables ``transfers() `` otherwise. The event ``TransfersEnabled(bool newStatus)`` is emitted. 
+
+The function signature is shown below. It accepts an array of recipients and an array of tokens amounts that should be transferred to them.
 
 ```
 function transfers(
@@ -166,87 +167,85 @@ function transfers(
   ) public transfersAllowed returns (bool)
 ```
 
-Only contract owner can enable/disable the method ``transfers()`` by invoking the method ``enableTransfers(bool enable)``. It enables method ``transfers()``for batch transfers if ``enable=true``, and disables ``transfers() `` otherwise. The event ``TransfersEnabled(bool newStatus)`` is emitted.
 
 ### Staking Feature
 
-The new token includes a staking feature and StormX will reward users for any staked tokens they have.
-
-This feature comprises the following sections.
+The new token includes a staking feature. StormX intends to reward users for any staked STMX tokens they have.
+This feature is described in the following sections.
 
 #### Lock
 
-By invoking the function ``lock()``, users can lock any amount of new StormX tokens as long as they have enough unlocked token balance. Locked tokens can not be manipulable by any means. Once the specified amount of tokens are locked successfully, an interest start to be accumulated and calculated off-chain by StormX (see N1). The locked token balance of users can be read via read methods (see section Read Methods). While the users are not able to perform any operations on locked tokens, these locked tokens are still reported as owned by the users when method ``balanceOf()`` is called.
+By invoking function ``lock()``, users can lock (stake) any amount of STMX tokens, as long as they have large enough unlocked STMX balance. Locked tokens can not be manipulabled by any means. Once the specified amount of tokens is locked, an interest can be accumulated as per off-chain calculations by StormX (see non-requirement N1). The locked token balance of users can be read via read methods (see section Read Methods). While the users are not able to perform any operations on locked tokens (except for unlocking), these locked tokens are still reported as owned by the users when method ``balanceOf()`` is called.
 
 #### Unlock
 
-By invoking the function ``unlock()``, users are able to unlock any amount of locked new StormX tokens they have, and are able to perform any operations on their unlocked tokens as desired. Once the specified amount of tokens becomes unlocked, those tokens will no longer accumulate interest.
+By invoking function ``unlock()``, users are able to unlock (unstake) any amount of locked STMX tokens they have, and are able to perform operations on their unlocked tokens as desired.
 
 #### Read Methods
 
 Anyone can call read methods to retrieve the different kinds of balance.
 
- 1. ``lockedBalanceOf(address account)`` returns the amount of locked tokens account holds
+ 1. ``lockedBalanceOf(address account)`` returns the amount of locked (staked) tokens the account holds
 
- 2. ``unlockedBalanceOf(address account)`` returns the amount of unlock tokens account holds
+ 2. ``unlockedBalanceOf(address account)`` returns the amount of unlock (unstaked) tokens the account holds
 
- 3. ``balanceOf(address account)`` returns the total amount of tokens account holds, i.e the sum of locked and unlocked tokens 
+ 3. ``balanceOf(address account)`` returns the total amount of the tokens the account holds, i.e the sum of locked and unlocked tokens 
 
-#### GSN relayed calls
+#### Calls Relayed by GSN
 
-StormXToken contract inherits from ``StormXGSNRecipient`` (see StormXGSNRecipient section for more details) and is able to receive GSN relayed calls from GSN relay hub. For references, see [1,2].
+The `StormXToken.sol` contract inherits from ``StormXGSNRecipient`` (see the StormXGSNRecipient section for more details) and is able to receive relayed calls from GSN. For more information about GSN, see [1,2].
 
-By inheriting from ``StormXGSNRecipient``, the contract can charge users in StormX tokens for any accepted GSN relayed calls , and the charged tokens will be transferred to the specified StormX’s reserve address (see Charging section under StormXGSNRecipient).
+By inheriting from ``StormXGSNRecipient``, the contract can charge users STMX tokens for any accepted GSN relayed calls. The charged tokens will be transferred to the specified reserve address (see the Charging subsection under StormXGSNRecipient).
 
-As per current implementation, only `StormXToken.sol` and `Swap.sol` can charge users for a fee without users' explicit approval. In the future, any contract that inherits from ``StormXGSNRecipient`` and is deployed at address ``recipient``, it can charge user successfully only if the user invokes ``StormXToken.approve(recipient, chargeFee)`` before the GSN relayed call.
+As per current implementation, only `StormXToken.sol` and `Swap.sol` can charge users a fee in STMX without users' explicit approval. In the future, any contract that inherits from ``StormXGSNRecipient`` and is deployed at an address ``recipient`` can charge user successfully only if the user invokes ``StormXToken.approve(recipient, chargeFee)`` before the GSN-relayed call.
 
-### Swap
+### Swap.sol
 
-This smart contract supports the token migration and guarantees that the total supply of the new token will be at most the total supply of the original token (the token supply will in fact be equal to the original token supply after token migration is closed; see R4-3)
+This smart contract supports the token migration and guarantees that the total supply of the STMX will be at most the total supply of the original token STORM, and that will be equal to the original token supply after token migration is closed (see R4-3).
 
 #### Token Migration
 
-To open token migration, ownership of the old token contract should be transferred to this contract. The contract owner should call the function ``initialize()`` to accept the old token contract ownership and record the initialized time to guarantee the token swap can last at least 24 weeks.
+To open token migration period, the ownership of the old token contract should be transferred to this contract. The contract owner should call the function ``initialize()`` to accept the old token contract ownership and record the initialized time to guarantee the token swap can last at least 24 weeks.
 
-Anyone can call the method ``convert(uint256 amount)`` to convert a specified amount of original StormX tokens to the new token with exchange rate 1:1 as long as the user has enough unlocked token balance.
+Anyone can call the method ``convert(uint256 amount)`` to convert a specified amount of STORM tokens to the new STMX token with exchange rate 1:1.
 
-The migration uses the privileged access of the original token to dispose of the amount being migrated, and token minting for the new StormX token. Therefore, the user does not need to issue approvals for the tokens undergoing migration.
+The migration uses the privileged access of the original token contract to burn the amount being migrated, and token minting for the STMX token contract. Therefore, the user does not need to issue approvals for the tokens undergoing migration.
 
-The new token is compliant with the principles of decentralization, i.e., it is the choice of a user to convert their original tokens to the new tokens. StormX is not able to force or deny such a conversion for any account.
+The STMX is compliant with the principles of decentralization, i.e., it is the choice of a user to convert their original STORM tokens to STMX tokens. The StormX team is not able to force or deny such a conversion for any account.
 
-#### Close Token Migration
+#### Closing Token Migration
 
-The token migration can be stopped by StormX only after 24 weeks from initialization. Only the contract owner can call the function ``disableMigration(address reserve)`` to stop token swap, which will mint remaining tokens and send them to the address ``reserve``. 
+The token migration can be stopped by StormX only after 24 weeks from the initialization of `Swap.sol`. Only the contract owner can call the function ``disableMigration(address reserve)`` to stop token swap, which will mint the remaining tokens and send them to the address ``reserve``. 
 
 If token migration is closed successfully, the events ``MigrationClosed()`` and ``MigrationLeftoverTransferred(stormXReserve, amount)`` will be emitted to indicate the success.
 
-#### Transfer Ownership
+This action is final and cannot be undone.
 
-This contract requires the ownership of the old token contract during token migration and it supports an owner-only method to transfer the old token ownership to a desired new owner.
+#### Transferring Ownership of STORM
 
-The contract owner can call the method ``transferOldTokenOwnership(address newOwner)`` to transfer the old token contract ownership to ``newOwner``, and ``newOwner`` has to accept the ownership explicitly by calling the function ``acceptOwnership()`` in old token contract to accept the ownership.
+The `Swap.sol` contract requires the ownership of the old STORM token contract during token migration period. It provides an owner-only method for transferring the contract back to the original owner after the swap period is closed: The contract owner can call the method ``transferOldTokenOwnership(address newOwner)`` to transfer the old token contract ownership to ``newOwner``, and ``newOwner`` has to accept the ownership explicitly by calling the function ``acceptOwnership()`` in the STORM token contract to accept the ownership.
 
-Important: This token is prevented from being initialized twice. Therefore, once the old token ownership is transferred out to a new owner, this swap contract will never be able to accept the old token ownership again and ``convert(uint256 amount)`` will never be able to be invoked. 
+Important: The `Swap.sol` is prevented from being initialized twice. Therefore, once the old token ownership is transferred out to a new owner, this swap contract will never be able to accept the old token ownership again and ``convert(uint256 amount)`` will never be able to be invoked. If an initialization of `Swap.sol` happens wrong or by mistake, a new instance will need to be deployed.
 
 ### Deployment Instructions
 
-The following order is strictly required when deploying relevant contracts and setting up initializations (the Ethereum account used by StormX team will be referred to as StormXAdmin).
+The following order is strictly required when deploying the relevant contracts and setting up initializations (the Ethereum account used by StormX team will be referred to as StormXAdmin).
 
-1. StormXAdmin deploys ``StormXToken``, passing the address of StormX’s reserve. StormXAdmin becomes the owner of the contract and StormX’s reserve will receive all charged fees of GSN relayed calls.
+1. StormXAdmin deploys ``StormXToken.sol``, passing the address of StormX's reserve. StormXAdmin becomes the owner of the contract and StormX's reserve will receive all charged fees of GSN relayed calls.
 
-   - verify that StormXAdmin is the owner of ``StormXToken`` contract.
+   - When done, as a sanity check, verify that StormXAdmin is the owner of the ``StormXToken`` contract.
 
-2. StormXAdmin deploys ``Swap``, passing the address of ``StormToken``(the old token contract), ``StormXToken`` and StormX’s reserve. StormXAdmin becomes the owner of ``Swap`` and StormX’s reserve will receive all charged fees of GSN relayed calls.
+2. StormXAdmin deploys ``Swap``, passing the address of ``StormToken.sol``(the old token contract for STORM), ``StormXToken.sol`` and StormX's reserve. StormXAdmin becomes the owner of ``Swap`` and StormX's reserve will receive all charged fees of GSN relayed calls.
 
-   - verify that StormXAdmin is the owner of ``Swap`` contract.
+   - When done, as a sanity check, verify that StormXAdmin is the owner of the ``Swap`` contract.
 
 3. StormXAdmin invokes the function ``StormXToken.initialize(Swap.address)`` for `Swap.sol` to mint new tokens during token swap and charge users for GSN relayed call
 
-   - verify that the state variable ``swap`` is set to ``Swap.address`` properly in ``StormXToken.sol``
+   - When done, as a sanity check, verify that the state variable ``swap`` is set to ``Swap.address`` properly in ``StormXToken.sol``
 
-4. StormXAdmin invokes the functions ``StormToken.transferOwnership(Swap.address)`` and ``Swap.initialize()`` sequentially so that ``Swap`` can destroy old tokens for users during token swap.
+4. StormXAdmin invokes the functions ``StormToken.transferOwnership(Swap.address)`` and ``Swap.initialize()`` sequentially so that ``Swap.sol`` can destroy old tokens for users during token swap.
 
-   - verify that ``Swap`` contract is the owner of the old token contract.
+   - When done, as a sanity check, verify that the ``Swap.sol`` contract is the owner of the old token contract.
 
 ### Non-Trivial Use-Cases
 

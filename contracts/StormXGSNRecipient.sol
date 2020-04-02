@@ -123,8 +123,9 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
     uint256 unlockedBalance = token.unlockedBalanceOf(from);
     if (unlockedBalance < chargeFee) {
       bytes4 selector = readBytes4(encodedFunction, 0);
-      if (selector == bytes4(keccak256("convert(uint256)"))) {
-        // unlocked token balance for the user if conversion succeeds
+      if (selector == bytes4(keccak256("convert(uint256)")) || 
+        selector == bytes4(keccak256("unlock(uint256)"))) {
+        // unlocked token balance for the user if transaction succeeds
         uint256 amount = uint256(getParam(encodedFunction, 0)).add(unlockedBalance);
         if (amount >= chargeFee) {
           // we can charge this after the conversion

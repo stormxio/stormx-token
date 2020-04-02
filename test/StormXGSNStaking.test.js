@@ -72,6 +72,35 @@ contract("StormX token staking feature GSN test", async function(accounts) {
     assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 10);
   });
 
+  it("GSN unlock succeeds if enough unlocked balance of user after transaction test", async function() {
+    await this.recipient.methods.lock(90).send({from: user});
+    assert.equal(await this.recipient.methods.lockedBalanceOf(user).call(), 90);
+    assert.equal(await this.recipient.methods.unlockedBalanceOf(user).call(), 0);
+    await this.recipient.methods.unlock(90).send({from: user});
+    assert.equal(await this.recipient.methods.balanceOf(user).call(), 80);
+    assert.equal(await this.recipient.methods.lockedBalanceOf(user).call(), 0);
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 20);
+
+    await this.recipient.methods.lock(67).send({from: user});
+    assert.equal(await this.recipient.methods.lockedBalanceOf(user).call(), 67);
+    assert.equal(await this.recipient.methods.unlockedBalanceOf(user).call(), 3);
+
+    await this.recipient.methods.unlock(7).send({from: user});
+    assert.equal(await this.recipient.methods.lockedBalanceOf(user).call(), 60);
+    // `unlock()` is executed successfully and the user is charged
+    assert.equal(await this.recipient.methods.unlockedBalanceOf(user).call(), 0);
+  });
+
+  it("GSN unlock fails if not enough unlocked balance of user after transaction test", async function() {
+    await this.recipient.methods.lock(90).send({from: user});
+    assert.equal(await this.recipient.methods.lockedBalanceOf(user).call(), 90);
+    assert.equal(await this.recipient.methods.unlockedBalanceOf(user).call(), 0);
+    await Utils.assertGSNFail(this.recipient.methods.unlock(5).send({from: user}));
+    assert.equal(await this.recipient.methods.balanceOf(user).call(), 90);
+    assert.equal(await this.recipient.methods.lockedBalanceOf(user).call(), 90);
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 10);
+  });
+
   it("GSN unlock success test", async function() {
     await this.recipient.methods.lock(50).send({from: user});
     await this.recipient.methods.unlock(10).send({from: user});

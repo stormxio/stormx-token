@@ -118,4 +118,12 @@ contract Swap is StormXGSNRecipient {
     emit MigrationLeftoverTransferred(reserve, amount);
     return true;
   }
+
+  /**
+   * @dev Overrides the `contractType()` function in `StormXGSNRecipient.sol`
+   * @return the contract type of this child contract
+   */
+  function contractType() internal view returns (bytes32) {
+    return bytes32("Swap");
+  }
 }

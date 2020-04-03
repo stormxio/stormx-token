@@ -195,4 +195,20 @@ contract("StormX token GSN test", async function(accounts) {
     await this.recipient.methods.enableTransfers(true).send({from: owner});
     assert.isTrue(await this.recipient.methods.transfersEnabled().call());
   });
+
+  it("GSN transferFrom success if enough token balance after transaction test", async function() {
+    assert.equal(await this.recipient.methods.balanceOf(spender).call(), 0);
+    assert.equal(await this.recipient.methods.unlockedBalanceOf(spender).call(), 0);
+
+    await this.recipient.methods.approve(spender, 1000).send({from: user});
+    // GSN relayed call succeeds
+    await this.recipient.methods.transferFrom(user, spender, 15).send({from: spender});
+    assert.equal(await this.recipient.methods.balanceOf(spender).call(), 5);
+    assert.equal(await this.recipient.methods.unlockedBalanceOf(spender).call(), 5);
+
+    await this.recipient.methods.approve(spender, 1000).send({from: user});
+    await this.recipient.methods.transferFrom(user, spender, 7).send({from: spender});
+    assert.equal(await this.recipient.methods.balanceOf(spender).call(), 2);
+    assert.equal(await this.recipient.methods.unlockedBalanceOf(spender).call(), 2);
+  });
 });

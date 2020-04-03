@@ -164,4 +164,12 @@ contract StormXToken is
     initialized = true;
     emit SwapAddressAdded(_swap);
   }
+
+  /**
+   * @dev Overrides the `contractType()` function in `StormXGSNRecipient.sol`
+   * @return the contract type of this child contract
+   */
+  function contractType() internal view returns (bytes32) {
+    return bytes32("StormXToken");
+  }
 }

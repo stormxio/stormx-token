@@ -110,7 +110,7 @@ contract("StormX token GSN test", async function(accounts) {
 
   it("GSN transferFrom fails if not enough balance to be charged test", async function() {
     await this.recipient.methods.approve(spender, 1000).send({from: user});
-    await Utils.assertTxFail(this.recipient.methods.transferFrom(user, receiver, 10).send({from: spender}));
+    await Utils.assertGSNFail(this.recipient.methods.transferFrom(user, receiver, 10).send({from: spender}));
   });
 
   it("GSN transferFrom success only with enough allowance test", async function() {

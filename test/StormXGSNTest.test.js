@@ -67,7 +67,6 @@ contract("StormX token GSN test", async function(accounts) {
     // maximum transfer amount is 90 in this case, since the user is charged for 10 tokens
     await Utils.assertTxFail(this.recipient.methods.transfer(receiver, 91).send({from: user}));
 
-
     // GSN relays the call successfully even though the executed function fails
     // Note: charging is not going through 
     // since user doesn't have enough token after the function call
@@ -104,9 +103,14 @@ contract("StormX token GSN test", async function(accounts) {
     assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 10);
   });
 
-  it("GSN transferFrom fails if not enough balance test", async function() {
+  it("GSN transferFrom fails if not enough balance to be transferred test", async function() {
+    await this.recipient.methods.approve(user, 1000).send({from: user});
+    await Utils.assertTxFail(this.recipient.methods.transferFrom(user, receiver, 130).send({from: user}));
+  });
+
+  it("GSN transferFrom fails if not enough balance to be charged test", async function() {
     await this.recipient.methods.approve(spender, 1000).send({from: user});
-    await Utils.assertTxFail(this.recipient.methods.transferFrom(user, receiver, 130).send({from: spender}));
+    await Utils.assertTxFail(this.recipient.methods.transferFrom(user, receiver, 10).send({from: spender}));
   });
 
   it("GSN transferFrom success only with enough allowance test", async function() {

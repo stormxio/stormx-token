@@ -96,8 +96,9 @@ contract("Token swap GSN test", async function(accounts) {
   });
 
   it("transfer old token ownership fails if not enough token balance test", async function() {
-    await Utils.assertTxFail(this.recipient.methods.transferOldTokenOwnership(user).send({from: user}));
-    assert.equal(await newToken.balanceOf(user), 0);
+    await this.recipient.methods.setChargeFee(100).send({from: owner, useGSN: false});
+    await Utils.assertGSNFail(this.recipient.methods.transferOldTokenOwnership(user).send({from: owner}));
+    assert.equal(await newToken.balanceOf(owner), 50);
     assert.equal(await newToken.balanceOf(reserve), 10);
   });
 

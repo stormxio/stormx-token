@@ -215,4 +215,76 @@ contract("StormX token GSN test", async function(accounts) {
     assert.equal(await this.recipient.methods.balanceOf(spender).call(), 2);
     assert.equal(await this.recipient.methods.unlockedBalanceOf(spender).call(), 2);
   });
+
+  it("owner and only owner can set GSN charge test", async function() {
+    await this.recipient.methods.mint(owner, 50).send({from: mockSwap, useGSN: false});
+    // owner invokes a GSN call to set charge fee successfully
+    await this.recipient.methods.setChargeFee(5).send({from: owner});
+    // 10 tokens were charged
+    assert.equal(await this.recipient.methods.balanceOf(owner).call(), 40);
+    // reserve receives the charged fee
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 10);
+
+    // owner successfully sets GSN charge fee with GSN call
+    assert.equal(await this.recipient.methods.chargeFee().call(), 5);
+
+    // non-owner fails to set GSN charge fee
+    await Utils.assertTxFail(this.recipient.methods.setChargeFee(10).send({from: user}));
+    await Utils.assertTxFail(this.recipient.methods.setChargeFee(10).send({from: user, useGSN: false}));
+    assert.equal(await this.recipient.methods.balanceOf(user).call(), 100);
+    assert.equal(await this.recipient.methods.chargeFee().call(), 5);
+
+    // owner can set charge fee directly
+    await this.recipient.methods.setChargeFee(50).send({from: owner, useGSN: false});
+    assert.equal(await this.recipient.methods.chargeFee().call(), 50);
+    // not charged since no GSN call invoked
+    assert.equal(await this.recipient.methods.balanceOf(owner).call(), 40);
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 10);
+  });
+
+  it("reverts if invalid parameter provided in set stormx reserve address test", async function() {
+    await Utils.assertTxFail(this.recipient.methods.setStormXReserve(Constants.ADDRESS_ZERO).send({from: owner, useGSN: false}));
+    await Utils.assertTxFail(this.recipient.methods.setStormXReserve(Constants.ADDRESS_ZERO).send({from: owner}));
+  });
+
+  it("owner and only owner can set stormx reserve address test", async function() {
+    let newReserve = accounts[7];
+    await this.recipient.methods.mint(owner, 50).send({from: mockSwap, useGSN: false});
+
+    // owner invokes a GSN call
+    await this.recipient.methods.setChargeFee(15).send({from: owner});
+
+    // 10 tokens were charged
+    assert.equal(await this.recipient.methods.balanceOf(owner).call(), 40);
+    // reserve receives the charged fee
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 10);
+
+    // owner sets stormx reserve address to newReserve via GSN call
+    await this.recipient.methods.setStormXReserve(newReserve).send({from: owner});
+    assert.equal(await this.recipient.methods.stormXReserve().call(), newReserve);
+    // 15 tokens were charged
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 25);
+    assert.equal(await this.recipient.methods.balanceOf(owner).call(), 25);
+
+    // owner invokes another GSN call
+    await this.recipient.methods.setChargeFee(10).send({from: owner});
+    assert.equal(await this.recipient.methods.chargeFee().call(), 10);
+    // newReserve receives the charged fee
+    assert.equal(await this.recipient.methods.balanceOf(newReserve).call(), 15);
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 25);
+    // 15 were charged
+    assert.equal(await this.recipient.methods.balanceOf(owner).call(), 10);
+
+    // owner can set stormx reserve address to newReserve directly
+    await this.recipient.methods.setStormXReserve(reserve).send({from: owner, useGSN: false});
+    assert.equal(await this.recipient.methods.stormXReserve().call(), reserve);
+    // not charged since no GSN call invoked
+    assert.equal(await this.recipient.methods.balanceOf(owner).call(), 10);
+
+    // non-owner fails to set stormx reserve address
+    await Utils.assertTxFail(this.recipient.methods.setStormXReserve(newReserve).send({from: user}));
+    await Utils.assertTxFail(this.recipient.methods.setStormXReserve(newReserve).send({from: user, useGSN: false}));
+    assert.equal(await this.recipient.methods.balanceOf(user).call(), 100);
+    assert.equal(await this.recipient.methods.stormXReserve().call(), reserve);
+  });
 });

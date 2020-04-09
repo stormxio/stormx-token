@@ -119,11 +119,37 @@ contract Swap is StormXGSNRecipient {
     return true;
   }
 
-  /**
-   * @dev Overrides the `contractType()` function in `StormXGSNRecipient.sol`
-   * @return the contract type of this child contract
+   /**
+   * @dev Checks whether to accepte a GSN relayed call
+   * @param from the user originating the GSN relayed call
+   * @param encodedFunction the function call to relay, including data
+   * @return ``accept`` indicates whether to accept the relayed call
+   *         ``chargeBefore`` indicates whether to charge before executing encoded function
    */
-  function contractType() internal view returns (bytes32) {
-    return bytes32("Swap");
+  function _acceptRelayedCall(
+    address from,
+    bytes memory encodedFunction
+  ) internal view returns (bool accept, bool chargeBefore) {
+    bool chargeBefore = true;
+    uint256 unlockedBalance = token.unlockedBalanceOf(from);
+    if (unlockedBalance < chargeFee) {
+      // charge users after executing the encoded function
+      chargeBefore = false;
+      bytes4 selector = readBytes4(encodedFunction, 0);
+      if (selector == bytes4(keccak256("convert(uint256)"))) {
+        // unlocked token balance for the user if transaction succeeds
+        uint256 amount = uint256(getParam(encodedFunction, 0)).add(unlockedBalance);
+        if (amount >= chargeFee) {
+          return (true, chargeBefore);
+        } else {
+          // if rejects the call, the value of chargeBefore does not matter
+          return (false, chargeBefore);
+        }
+      } else {
+        return (false, chargeBefore);
+      }
+    } else {
+      return (true, chargeBefore);
+    }
   }
 }

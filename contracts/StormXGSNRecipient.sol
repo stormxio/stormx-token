@@ -118,55 +118,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   function _acceptRelayedCall(
     address from,
     bytes memory encodedFunction
-  ) internal view returns (bool accept, bool chargeBefore) {
-    bool chargeBefore = true;
-    uint256 unlockedBalance = token.unlockedBalanceOf(from);
-    if (unlockedBalance < chargeFee) {
-      // charge users after executing the encoded function
-      chargeBefore = false;
-      bytes4 selector = readBytes4(encodedFunction, 0);
-      if ((
-        contractType() == bytes32("Swap") &&
-        selector == bytes4(keccak256("convert(uint256)"))
-        ) ||
-        (contractType() == bytes32("StormXToken") &&
-        selector == bytes4(keccak256("unlock(uint256)"))
-        )) {
-        // unlocked token balance for the user if transaction succeeds
-        uint256 amount = uint256(getParam(encodedFunction, 0)).add(unlockedBalance);
-        if (amount >= chargeFee) {
-          return (true, chargeBefore);
-        } else {
-          // if rejects the call, the value of chargeBefore does not matter
-          return (false, chargeBefore);
-        }
-      } else if (
-        contractType() == bytes32("StormXToken") &&
-        selector == bytes4(keccak256("transferFrom(address,address,uint256)"))
-      ) {
-        address sender = address(getParam(encodedFunction, 0));
-        address recipient = address(getParam(encodedFunction, 1));
-        uint256 amount = getParam(encodedFunction, 2);
-        if (
-          // `from` can have enough unlocked token balance after the transaction
-          recipient == from &&
-          amount.add(unlockedBalance) >= chargeFee &&
-          // check `transferFrom()` can be executed successfully
-          token.unlockedBalanceOf(sender) >= amount &&
-          token.allowance(sender, from) >= amount
-        ) {
-          return (true, chargeBefore);
-        } else {
-          return (false, chargeBefore);
-        }
-      } else {
-        // if rejects the call, the value of chargeBefore does not matter
-        return (false, chargeBefore);
-      }
-    } else {
-      return (true, chargeBefore);
-    }
-  }
+  ) internal view returns (bool accept, bool chargeBefore);
 
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {
     (address user, bool chargeBefore) = abi.decode(context, (address, bool));
@@ -292,16 +244,5 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   */
   function getParam(bytes memory msgData, uint index) internal pure returns (uint256) {
     return readUint256(msgData, 4 + index * 32);
-  }
-
-  /**
-   * @dev Only used in internal function `_acceptRelayedCall()`
-   *      to make sure function is invoked in correct contract
-   *      when charging users for GSN relayed calls
-   *     Note: must be override by child contracts
-   * @return the type/name of this contract
-   */
-  function contractType() internal view returns (bytes32) {
-    return bytes32("StormXGSNRecipient");
   }
 }

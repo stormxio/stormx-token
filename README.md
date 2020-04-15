@@ -192,6 +192,14 @@ Anyone can call read methods to retrieve the different kinds of balance.
 
  3. ``balanceOf(address account)`` returns the total amount of tokens account holds, i.e the sum of locked and unlocked tokens 
 
+#### Reward
+Contract owner and a specific role `rewardRole` can invoke the function `reward(address recipient, uint256 amount) public onlyAuthorized` to reward a user with specified amount of tokens, or they can invoke the function `rewards(address[] memory recipients, uint256[] memory values)` to reward multiple users at one time.
+
+Contract owner can assign the specific role `rewardRole` to any address by invoking the function `assignRewardRole(address account) public onlyOwner`. This function emits an event `RewardRoleAssigned(address rewardRole)` when `rewardRole` is assigned successfully.
+
+##### Auto-staking
+By default, all rewarded tokens will be automatically staked for users when `reward()` or `rewards()` is invoked. Users can disable the auto-staking feature by invoking the function `setAutoStaking(bool enabled)` with `enabled` being `false`. If users want to enable this feature, invoke `setAutoStaking(bool enabled)` with `enabled` being `true`. If auto-staking feature is disabled, rewarded tokens will not be staked for users.
+
 #### GSN relayed calls
 
 StormXToken contract inherits from ``StormXGSNRecipient`` (see StormXGSNRecipient section for more details) and is able to receive GSN relayed calls from GSN relay hub. For references, see [1,2].
@@ -396,6 +404,18 @@ function acceptRelayedCall(
 
 3. The registered relayer sends the transaction for the user.
 
+#### UC1.8 Reward a user
+1. An address `account` invokes the function `reward(address recipient, uint256 amount) public onlyAuthorized` to reward a user.
+
+2. The function checks whether `account` matches contract owner address or `rewardRole` address. If neither matches, the function reverts.
+
+3. Checks whether `recipient` is address zero. If `recipient==address(0)`, the function reverts.
+
+4. The function transfers `amount` tokens to the address `recipient`.
+
+5. If auto-staking feature is disabled for the address `recipient`, the function returns.
+
+5. Else, stake all rewarded tokens for `recipient`.
 
 ### References
 

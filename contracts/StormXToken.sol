@@ -27,8 +27,6 @@ contract StormXToken is
   event TransfersEnabled(bool newStatus);
   event SwapAddressAdded(address swap);
   event RewardRoleAssigned(address rewardRole);
-  event Reward(address indexed recipient, uint256 amount);
-  event RewardedTokenLocked(address indexed recipient, uint256 amount);
   event AutoStakingSet(address indexed account, bool status);
 
   modifier transfersAllowed {
@@ -178,8 +176,6 @@ contract StormXToken is
 
   /**
    * @dev Assigns `rewardRole` to the specified address
-   * Note: Owner can assign `rewardRole` at any time.
-   * If `account` is address zero, only owner can invoke `reward()` and `rewards()`.
    * @param account address to be assigned as the `rewardRole`
    */
   function assignRewardRole(address account) public onlyOwner {
@@ -195,13 +191,12 @@ contract StormXToken is
   function reward(address recipient, uint256 amount) public onlyAuthorized {
     require(recipient != address(0), "Invalid recipient address provided");
 
-    transfer(recipient, amount);
-    emit Reward(recipient, amount);
+    require(transfer(recipient, amount), "Transfer fails when rewarding a user");
     // If `autoStakingDisabled[user] == false`,
     // auto staking is enabled for current user
     if (!autoStakingDisabled[recipient]) {
       lockedBalanceOf[recipient] = lockedBalanceOf[recipient].add(amount);
-      emit RewardedTokenLocked(recipient, amount);
+      emit TokenLocked(recipient, amount);
     }
   }
 

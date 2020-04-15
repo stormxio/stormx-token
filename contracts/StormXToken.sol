@@ -174,7 +174,7 @@ contract StormXToken is
     emit SwapAddressAdded(_swap);
   }
 
-  /*
+  /**
    * @dev Assigns `rewardRole` to the specified address
    * @param account address to be assigned as the `rewardRole`
    */

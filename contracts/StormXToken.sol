@@ -14,8 +14,10 @@ contract StormXToken is
   using SafeMath for uint256;
 
   bool public transfersEnabled;
+  mapping(address => bool) public autoStakingDisabled;
   bool public initialized = false;
   address public swap;
+  address public rewardRole;
 
   // Variables for staking feature
   mapping(address => uint256) public lockedBalanceOf;
@@ -24,9 +26,16 @@ contract StormXToken is
   event TokenUnlocked(address indexed account, uint256 amount);
   event TransfersEnabled(bool newStatus);
   event SwapAddressAdded(address swap);
+  event RewardRoleAssigned(address rewardRole);
+  event AutoStakingSet(address indexed account, bool status);
 
   modifier transfersAllowed {
     require(transfersEnabled, "Transfers not available");
+    _;
+  }
+
+  modifier onlyAuthorized {
+    require(_msgSender() == owner() || _msgSender() == rewardRole, "Not authorized");
     _;
   }
 
@@ -163,6 +172,57 @@ contract StormXToken is
     emit TransfersEnabled(true);
     initialized = true;
     emit SwapAddressAdded(_swap);
+  }
+
+  /*
+   * @dev Assigns `rewardRole` to the specified address
+   * @param account address to be assigned as the `rewardRole`
+   */
+  function assignRewardRole(address account) public onlyOwner {
+    rewardRole = account;
+    emit RewardRoleAssigned(account);
+  }
+
+  /**
+   * @dev Transfers tokens to users as rewards
+   * @param recipient address that receives the rewarded tokens
+   * @param amount amount of rewarded tokens
+   */
+  function reward(address recipient, uint256 amount) public onlyAuthorized {
+    require(recipient != address(0), "Invalid recipient address provided");
+
+    require(transfer(recipient, amount), "Transfer fails when rewarding a user");
+    // If `autoStakingDisabled[user] == false`,
+    // auto staking is enabled for current user
+    if (!autoStakingDisabled[recipient]) {
+      lockedBalanceOf[recipient] = lockedBalanceOf[recipient].add(amount);
+      emit TokenLocked(recipient, amount);
+    }
+  }
+
+  /**
+   * @dev Rewards users in batch
+   * @param recipients an array of recipient address
+   * @param values an array of specified amount of tokens to be rewarded
+   */
+  function rewards(address[] memory recipients, uint256[] memory values) public onlyAuthorized {
+    require(recipients.length == values.length, "Input lengths do not match");
+
+    for (uint256 i = 0; i < recipients.length; i++) {
+      reward(recipients[i], values[i]);
+    }
+  }
+
+  /**
+   * @dev Sets auto-staking feature status for users
+   * If `enabled = true`, rewarded tokens will be automatically staked for the message sender
+   * Else, rewarded tokens will not be automatically staked for the message sender.
+   * @param enabled expected status of the user's auto-staking feature status
+   */
+  function setAutoStaking(bool enabled) public {
+    // If `enabled == false`, set `autoStakingDisabled[user] = true`
+    autoStakingDisabled[_msgSender()] = !enabled;
+    emit AutoStakingSet(_msgSender(), enabled);
   }
 
   /**

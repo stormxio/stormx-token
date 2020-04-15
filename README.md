@@ -117,9 +117,12 @@ Only the contract owner can call the methods ``setChargeFee(uint256 newFee)`` an
 For any contract inheriting from this contract, it will try to charge users for every GSN relayed call.
 1. This contract accepts the GSN relayed call if the user has enough unlocked token balance and will charge user before the called function is executed.
 
-2. If the user does not have enough unlocked token balance and is calling the function ``convert(uint256 amount)``, this contract accepts the GSN relayed call only if they will have enough unlocked new token balance after ``convert(uint256 amount)`` is executed, i.e. ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``. After `convert()` is executed successfully, the user will be charged for the fee.
+2. If the user does not have enough unlocked token balance and is calling the function ``Swap.convert(uint256 amount)`` or `StormXToken.unlock(uint256 amount)`, this contract accepts the GSN relayed call only if they will have enough unlocked new token balance after the function is executed, i.e. ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``. After `convert()` or `unlock()` is executed successfully, the user will be charged for the fee.
 
-3. If neither of the previous is satisfied, rejects the relayed call.
+3. If the user does not have enough unlocked token balance and is calling the function `StormXToken.transferFrom(address sender, address recipient, uint256 amount)`, this contract accepts the GSN relayed call only if they will have enough unlocked new token balance after the function is executed, i.e. ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``, `recipient == user`, and the transfering can be executed successfully (See UC1.6 for more details).
+After `transferFrom()` is executed successfully, the user will be charged for the fee.
+
+4. If none of the previous is satisfied, rejects the relayed call.
 
 #### Gas Station Network (GSN) Support
 
@@ -280,9 +283,9 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 1. The user calls the function ``unlock(amount)`` with signed signature to GSN.
 
-2. The new token smart contract accepts the relayed call from GSN and execute ``unlock(amount)`` if the user has enough unlocked new StormX token balance, i.e. no less than specified ``chargeFee``, and rejects otherwise.
+2. The contract accepts the relayed call from GSN and execute ``unlock(amount)`` if the user has enough unlocked new StormX token balance or ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``.
 
-3. The user is charged by the specified amount ``chargeFee`` of new StormX tokens, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``.
+3. The StormXToken contract charges the user by ``chargeFee`` if the user has enough unlocked token balance right now, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``. Otherwise, the charging will be in step 8 if the transaction succeeds.
 
 4. The function checks whether the ``_msgSender()``(i.e the original caller) has this amount locked StormX tokens, and reverts if not.
 
@@ -291,6 +294,8 @@ All use cases are considered using GSN. If the user calls functions directly for
 6. The function emits the event ``TokenUnlocked(userAddress, amount)`` to indicate the success of unstaking.
 
 7. The function returns true.
+
+8. The user is charged by the specified amount ``chargeFee`` of new StormX tokens if the user was not charged previously, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``.
 
 #### UC1.3 User converts original tokens to new StormX token via GSN call
 
@@ -344,7 +349,25 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 6. If all checks pass, transfer  ``_values`` to ``_recipients`` respectively by invoking the function ``transfer()`` multiple times.
 
-#### UC1.6 The user sends a meta transaction to GSN and this token contract accepts the relayed call from GSN
+#### UC1.6 The user calls transferFrom() via GSN
+
+1. The user calls the function ``transferFrom(address sender, address recipient, uint256 amount)`` with signed signature to GSN.
+
+2. The contract accepts the relayed call from GSN and execute ``transferFrom()`` if the user has enough unlocked new StormX token balance, i.e ``StormXToken.unlockedBalanceOf(user) >= chargeFee``.
+
+3. Otherwise, it checks the following to make sure the user can have enough unlocked StormX tokens after `transferFrom()` is executed successfully.
+   1. ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``
+   2. ``recipient == user``
+   3. ``StormXToken.unlockedBalanceOf(sender) >= amount``
+   4. ``StormXToken.allowance(sender, user) >= amount``
+
+4. The StormXToken contract charges the user by ``chargeFee`` if the user has enough unlocked token balance right now, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``. Otherwise, the charging will be in step 5 if the transaction succeeds.
+
+4. The standard ERC20 `transferFrom()` function is invoked in `StormXToken.sol`.
+
+5. The user is charged by the specified amount ``chargeFee`` of new StormX tokens if the user was not charged previously, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``.
+
+#### UC1.7 The user sends a meta transaction to GSN and this token contract accepts the relayed call from GSN
 
 1. User sends a function with signed data to GSN relayHub.
 
@@ -371,11 +394,17 @@ function acceptRelayedCall(
 
 4. Accepts the relayed call originated by the user from if the above returns true, transfers the user’s balance with amount chargeFee to ``stormXReserve``.
 
-5. Otherwise, if the user is not calling ``convert(uint256 amount)``, rejects the relayed call with the ``errorCode``, i.e. ``INSUFFICIENT_BALANCE``.
+5. If the user is calling ``Swap.convert(uint256 amount)`` and ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``, accepts the call and charge the user after ``convert()`` is executed successfully.
 
-6. If the user is calling ``convert(uint256 amount)`` and ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``, accepts the call and charge the user after ``convert()`` is executed successfully.
+6. If the user is calling ``StormXToken.unlock(uint256 amount)`` and ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``, accepts the call and charge the user after ``unlock()`` is executed successfully.
 
-7. Rejects the call with ``errorcode`` otherwise.
+7. If the user is calling ``StormXToken.transferFrom(address sender, address recipient, uint256 amount)``, the function checks the following and charge the user after ``transferFrom()`` is executed successfully.
+   1. ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``
+   2. ``recipient == user``
+   3. ``StormXToken.unlockedBalanceOf(sender) >= amount``
+   4. ``StormXToken.allowance(sender, user) >= amount``
+
+8. Rejects the call with ``errorcode`` otherwise.
 
 
 #### UC1.7 Send transactions via GSN

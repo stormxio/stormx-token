@@ -224,4 +224,46 @@ contract StormXToken is
     autoStakingDisabled[_msgSender()] = !enabled;
     emit AutoStakingSet(_msgSender(), enabled);
   }
+
+  /**
+   * @dev Checks whether to accept a GSN relayed call
+   * @param from the user originating the GSN relayed call
+   * @param encodedFunction the function call to relay, including data
+   * @return ``accept`` indicates whether to accept the relayed call
+   *         ``chargeBefore`` indicates whether to charge before executing encoded function
+   */
+  function _acceptRelayedCall(
+    address from,
+    bytes memory encodedFunction
+  ) internal view returns (bool accept, bool chargeBefore) {
+    bool chargeBefore = true;
+    uint256 unlockedBalance = unlockedBalanceOf(from);
+    if (unlockedBalance < chargeFee) {
+      // charge users after executing the encoded function
+      chargeBefore = false;
+      bytes4 selector = readBytes4(encodedFunction, 0);
+      if (selector == bytes4(keccak256("unlock(uint256)"))) {
+        // unlocked token balance for the user if transaction succeeds
+        uint256 amount = uint256(getParam(encodedFunction, 0)).add(unlockedBalance);
+        return (amount >= chargeFee, chargeBefore);
+      } else if (selector == bytes4(keccak256("transferFrom(address,address,uint256)"))) {
+        address sender = address(getParam(encodedFunction, 0));
+        address recipient = address(getParam(encodedFunction, 1));
+        uint256 amount = getParam(encodedFunction, 2);
+
+        bool accept = recipient == from &&
+          // `from` can have enough unlocked token balance after the transaction
+          amount.add(unlockedBalance) >= chargeFee &&
+          // check `transferFrom()` can be executed successfully
+          unlockedBalanceOf(sender) >= amount &&
+          allowance(sender, from) >= amount;
+        return (accept, chargeBefore);
+      } else {
+        // if rejects the call, the value of chargeBefore does not matter
+        return (false, chargeBefore);
+      }
+    } else {
+      return (true, chargeBefore);
+    }
+  }
 }

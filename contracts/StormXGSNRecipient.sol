@@ -109,7 +109,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   }
 
   /**
-   * @dev Checks whether to accepte a GSN relayed call
+   * @dev Checks whether to accept a GSN relayed call
    * @param from the user originating the GSN relayed call
    * @param encodedFunction the function call to relay, including data
    * @return ``accept`` indicates whether to accept the relayed call
@@ -118,30 +118,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   function _acceptRelayedCall(
     address from,
     bytes memory encodedFunction
-  ) internal view returns (bool accept, bool chargeBefore) {
-    bool chargeBefore = true;
-    uint256 unlockedBalance = token.unlockedBalanceOf(from);
-    if (unlockedBalance < chargeFee) {
-      bytes4 selector = readBytes4(encodedFunction, 0);
-      if (selector == bytes4(keccak256("convert(uint256)"))) {
-        // unlocked token balance for the user if conversion succeeds
-        uint256 amount = uint256(getParam(encodedFunction, 0)).add(unlockedBalance);
-        if (amount >= chargeFee) {
-          // we can charge this after the conversion
-          chargeBefore = false;
-          return (true, chargeBefore);
-        } else {
-          // if rejects the call, the value of chargeBefore does not matter
-          return (false, chargeBefore);
-        }
-      } else {
-        // if rejects the call, the value of chargeBefore does not matter
-        return (false, chargeBefore);
-      }
-    } else {
-      return (true, chargeBefore);
-    }
-  }
+  ) internal view returns (bool accept, bool chargeBefore);
 
   function _preRelayedCall(bytes memory context) internal returns (bytes32) {
     (address user, bool chargeBefore) = abi.decode(context, (address, bool));
@@ -265,7 +242,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   * @param index in byte array of bytes memory
   * @return the parameter extracted from call data
   */
-  function getParam(bytes memory msgData, uint index) internal pure returns (uint) {
+  function getParam(bytes memory msgData, uint index) internal pure returns (uint256) {
     return readUint256(msgData, 4 + index * 32);
   }
 }

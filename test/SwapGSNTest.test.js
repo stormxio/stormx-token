@@ -96,8 +96,9 @@ contract("Token swap GSN test", async function(accounts) {
   });
 
   it("transfer old token ownership fails if not enough token balance test", async function() {
-    await Utils.assertTxFail(this.recipient.methods.transferOldTokenOwnership(user).send({from: user}));
-    assert.equal(await newToken.balanceOf(user), 0);
+    await this.recipient.methods.setChargeFee(100).send({from: owner, useGSN: false});
+    await Utils.assertGSNFail(this.recipient.methods.transferOldTokenOwnership(user).send({from: owner}));
+    assert.equal(await newToken.balanceOf(owner), 50);
     assert.equal(await newToken.balanceOf(reserve), 10);
   });
 
@@ -214,5 +215,78 @@ contract("Token swap GSN test", async function(accounts) {
     // owner was charged for the GSN call
     assert.equal(await newToken.balanceOf(owner), 40);
     assert.equal(await newToken.balanceOf(reserve), 20);
+  });
+
+  it("owner and only owner can set GSN charge test", async function() {
+    await this.recipient.methods.convert(100).send({from: user, useGSN: false});
+    // owner invokes a GSN call to set charge fee successfully
+    await this.recipient.methods.setChargeFee(5).send({from: owner});
+    // 10 tokens were charged
+    assert.equal(await newToken.balanceOf(owner), 40);
+    // reserve receives the charged fee
+    assert.equal(await newToken.balanceOf(reserve), 20);
+
+    // owner successfully sets GSN charge fee with GSN call
+    assert.equal(await this.recipient.methods.chargeFee().call(), 5);
+
+    // non-owner fails to set GSN charge fee
+    await Utils.assertTxFail(this.recipient.methods.setChargeFee(10).send({from: user}));
+    await Utils.assertTxFail(this.recipient.methods.setChargeFee(10).send({from: user, useGSN: false}));
+    assert.equal(await newToken.balanceOf(user), 100);
+    assert.equal(await this.recipient.methods.chargeFee().call(), 5);
+
+    // owner can set charge fee directly
+    await this.recipient.methods.setChargeFee(50).send({from: owner, useGSN: false});
+    assert.equal(await this.recipient.methods.chargeFee().call(), 50);
+    // not charged since no GSN call invoked
+    assert.equal(await newToken.balanceOf(owner), 40);
+    assert.equal(await newToken.balanceOf(reserve), 20);
+  });
+
+  it("reverts if invalid parameter provided in set stormx reserve address test", async function() {
+    await Utils.assertTxFail(this.recipient.methods.setStormXReserve(Constants.ADDRESS_ZERO).send({from: owner, useGSN: false}));
+    await Utils.assertTxFail(this.recipient.methods.setStormXReserve(Constants.ADDRESS_ZERO).send({from: owner}));
+  });
+
+  it("owner and only owner can set stormx reserve address test", async function() {
+    let newReserve = accounts[7];
+
+    await this.recipient.methods.convert(100).send({from: user, useGSN: false});
+
+    // owner invokes a GSN call
+    await this.recipient.methods.setChargeFee(15).send({from: owner});
+
+    // 10 tokens were charged
+    assert.equal(await newToken.balanceOf(owner), 40);
+    // reserve receives the charged fee
+    assert.equal(await newToken.balanceOf(reserve), 20);
+
+    // owner sets stormx reserve address to newReserve via GSN call
+    await this.recipient.methods.setStormXReserve(newReserve).send({from: owner});
+    assert.equal(await this.recipient.methods.stormXReserve().call(), newReserve);
+    // 15 tokens were charged
+    assert.equal(await newToken.balanceOf(reserve), 35);
+    assert.equal(await newToken.balanceOf(owner), 25);
+
+    // owner invokes another GSN call
+    await this.recipient.methods.setChargeFee(10).send({from: owner});
+    assert.equal(await this.recipient.methods.chargeFee().call(), 10);
+    // newReserve receives the charged fee
+    assert.equal(await newToken.balanceOf(newReserve), 15);
+    assert.equal(await newToken.balanceOf(reserve), 35);
+    // 15 were charged
+    assert.equal(await newToken.balanceOf(owner), 10);
+
+    // owner can set stormx reserve address to newReserve directly
+    await this.recipient.methods.setStormXReserve(reserve).send({from: owner, useGSN: false});
+    assert.equal(await this.recipient.methods.stormXReserve().call(), reserve);
+    // not charged since no GSN call invoked
+    assert.equal(await newToken.balanceOf(owner), 10);
+
+    // non-owner fails to set stormx reserve address
+    await Utils.assertTxFail(this.recipient.methods.setStormXReserve(newReserve).send({from: user}));
+    await Utils.assertTxFail(this.recipient.methods.setStormXReserve(newReserve).send({from: user, useGSN: false}));
+    assert.equal(await newToken.balanceOf(user), 100);
+    assert.equal(await this.recipient.methods.stormXReserve().call(), reserve);
   });
 });

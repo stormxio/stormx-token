@@ -109,7 +109,7 @@ contract StormXGSNRecipient is GSNRecipient, Ownable {
   }
 
   /**
-   * @dev Checks whether to accepte a GSN relayed call
+   * @dev Checks whether to accept a GSN relayed call
    * @param from the user originating the GSN relayed call
    * @param encodedFunction the function call to relay, including data
    * @return ``accept`` indicates whether to accept the relayed call

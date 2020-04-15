@@ -120,7 +120,7 @@ contract Swap is StormXGSNRecipient {
   }
 
    /**
-   * @dev Checks whether to accepte a GSN relayed call
+   * @dev Checks whether to accept a GSN relayed call
    * @param from the user originating the GSN relayed call
    * @param encodedFunction the function call to relay, including data
    * @return ``accept`` indicates whether to accept the relayed call
@@ -139,12 +139,7 @@ contract Swap is StormXGSNRecipient {
       if (selector == bytes4(keccak256("convert(uint256)"))) {
         // unlocked token balance for the user if transaction succeeds
         uint256 amount = uint256(getParam(encodedFunction, 0)).add(unlockedBalance);
-        if (amount >= chargeFee) {
-          return (true, chargeBefore);
-        } else {
-          // if rejects the call, the value of chargeBefore does not matter
-          return (false, chargeBefore);
-        }
+        return (amount >= chargeFee, chargeBefore);
       } else {
         return (false, chargeBefore);
       }

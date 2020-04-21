@@ -113,6 +113,27 @@ contract("StormX token GSN test", async function(accounts) {
     await Utils.assertGSNFail(this.recipient.methods.transferFrom(user, receiver, 10).send({from: spender}));
   });
 
+  it("GSN no-op transferFrom fails if not enough balance to be charged test", async function() {
+    let newUser = accounts[8];
+    await this.recipient.methods.mint(newUser, 5).send({from: mockSwap, useGSN: false});
+    assert.equal(await this.recipient.methods.balanceOf(newUser).call(), 5);
+    await this.recipient.methods.approve(spender, 1000).send({from: newUser, useGSN: false});
+    await Utils.assertGSNFail(this.recipient.methods.transferFrom(newUser, newUser, 5).send({from: spender}));
+  });
+
+  it("GSN transferFrom success test", async function() {
+    let newUser = accounts[8];
+    await this.recipient.methods.mint(newUser, 5).send({from: mockSwap, useGSN: false});
+    await this.recipient.methods.mint(spender, 5).send({from: mockSwap, useGSN: false});
+    assert.equal(await this.recipient.methods.balanceOf(newUser).call(), 5);
+    assert.equal(await this.recipient.methods.balanceOf(spender).call(), 5);
+
+    await this.recipient.methods.approve(spender, 1000).send({from: newUser, useGSN: false});
+    await this.recipient.methods.transferFrom(newUser, spender, 5).send({from: spender});
+    assert.equal(await this.recipient.methods.balanceOf(spender).call(), 0);
+    assert.equal(await this.recipient.methods.balanceOf(reserve).call(), 10);
+  });
+
   it("GSN transferFrom success only with enough allowance test", async function() {
     await this.recipient.methods.mint(spender, 10).send({from: mockSwap, useGSN: false});
     await Utils.assertTxFail(this.recipient.methods.transferFrom(user, receiver, 10).send({from: spender}));

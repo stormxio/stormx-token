@@ -252,6 +252,8 @@ contract StormXToken is
         uint256 amount = getParam(encodedFunction, 2);
 
         bool accept = recipient == from &&
+          // no real effect of `transferfrom()` if `sender == recipient`
+          sender != recipient &&
           // `from` can have enough unlocked token balance after the transaction
           amount.add(unlockedBalance) >= chargeFee &&
           // check `transferFrom()` can be executed successfully

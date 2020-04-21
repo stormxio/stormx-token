@@ -267,7 +267,7 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 1. The user calls the function ``lock(amount)`` with signed signature to GSN.
 
-2. The new token smart contract accepts the relayed call from GSN and execute ``lock(amount)`` if the user has enough unlocked new StormX token balance, i.e. no less than specified ``chargeFee``, and rejects otherwise.
+2. The new token smart contract accepts the relayed call from GSN and executes ``lock(amount)`` if the user has enough unlocked new StormX token balance, i.e. no less than specified ``chargeFee``, and rejects otherwise.
 
 3. The user is charged by the specified amount ``chargeFee`` of new StormX tokens, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``.
 
@@ -283,7 +283,7 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 1. The user calls the function ``unlock(amount)`` with signed signature to GSN.
 
-2. The contract accepts the relayed call from GSN and execute ``unlock(amount)`` if the user has enough unlocked new StormX token balance or ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``.
+2. The contract accepts the relayed call from GSN and executes ``unlock(amount)`` if the user has enough unlocked new StormX token balance or ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``.
 
 3. The StormXToken contract charges the user by ``chargeFee`` if the user has enough unlocked token balance right now, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``. Otherwise, the charging will be in step 8 if the transaction succeeds.
 
@@ -301,7 +301,7 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 1. The user calls the function ``convert(amount)`` with signed signature to GSN.
 
-2. The Swap contract accepts the relayed call from GSN and execute ``convert(amount)`` if the user has enough unlocked new StormX token balance or ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``.
+2. The Swap contract accepts the relayed call from GSN and executes ``convert(amount)`` if the user has enough unlocked new StormX token balance or ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``.
 
 3. The contract charges the user by ``chargeFee`` if the user has enough unlocked token balance right now, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``. Otherwise, the charging will be in step 8 if the transaction succeeds.
 
@@ -319,7 +319,7 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 1. StormX admin calls the function ``disableMigration(address reserve)`` with signed signature to GSN.
 
-2. The Swap contract accepts the relayed call from GSN and execute ``disableMigration(address reserve)`` if StormX admin has enough unlocked new StormX token balance, i.e. no less than specified ``chargeFee``, and rejects otherwise.
+2. The Swap contract accepts the relayed call from GSN and executes ``disableMigration(address reserve)`` if StormX admin has enough unlocked new StormX token balance, i.e. no less than specified ``chargeFee``, and rejects otherwise.
 
 3. StormX admin is charged by the specified amount ``chargeFee`` of new StormX tokens, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``.
 
@@ -339,7 +339,7 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 1. The user calls the function ``transfers(address[] _recipients, uint256[] _values)`` with signed signature to GSN.
 
-2. The new token smart contract accepts the relayed call from GSN and execute ``transfers(address[] _recipients, uint256[] _values)`` if the user has enough unlocked balance, i.e. no less than specified ``chargeFee``, and rejects otherwise.
+2. The new token smart contract accepts the relayed call from GSN and executes ``transfers(address[] _recipients, uint256[] _values)`` if the user has enough unlocked balance, i.e. no less than specified ``chargeFee``, and rejects otherwise.
 
 3. The user is charged by the specified amount ``chargeFee`` of new StormX tokens, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``.
 
@@ -353,7 +353,7 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 1. The user calls the function ``transferFrom(address sender, address recipient, uint256 amount)`` with signed signature to GSN.
 
-2. The contract accepts the relayed call from GSN and execute ``transferFrom()`` if the user has enough unlocked new StormX token balance, i.e ``StormXToken.unlockedBalanceOf(user) >= chargeFee``.
+2. The contract accepts the relayed call from GSN and executes ``transferFrom()`` if the user has enough unlocked new StormX token balance, i.e ``StormXToken.unlockedBalanceOf(user) >= chargeFee``.
 
 3. Otherwise, it checks the following to make sure the user can have enough unlocked StormX tokens after `transferFrom()` is executed successfully.
    1. ``amount + StormXToken.unlockedBalanceOf(user) >= chargeFee``

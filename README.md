@@ -227,7 +227,7 @@ The new token is compliant with the principles of decentralization, i.e., it is 
 
 #### Close Token Migration
 
-The token migration can be stopped by StormX only after 24 weeks from initialization. Only the contract owner can call the function ``disableMigration(address reserve)`` to stop token swap, which will mint remaining tokens and send them to the address ``reserve``. 
+The token migration can be stopped by StormX only after 16 weeks from initialization. Only the contract owner can call the function ``disableMigration(address reserve)`` to stop token swap, which will mint remaining tokens and send them to the address ``reserve``.
 
 If token migration is closed successfully, the events ``MigrationClosed()`` and ``MigrationLeftoverTransferred(stormXReserve, amount)`` will be emitted to indicate the success.
 
@@ -323,7 +323,7 @@ All use cases are considered using GSN. If the user calls functions directly for
 
 3. StormX admin is charged by the specified amount ``chargeFee`` of new StormX tokens, and the charged tokens are transferred to StormX’s reserve ``stormXReserve``.
 
-4. This function checks the timestamp and reverts if it has not been 24 weeks from the token migration initialization. 
+4. This function checks the timestamp and reverts if it has not been 16 weeks from the token migration initialization.
 
 5. The function also reverts if token migration is not open yet or it is already closed.
 

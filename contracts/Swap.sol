@@ -18,9 +18,9 @@ contract Swap is StormXGSNRecipient {
   bool public migrationOpen;
   uint256 public initializeTime;
 
-  // Token migration should be open no shorter than 24 weeks,
-  // which is roughly 6 months
-  uint256 constant public MIGRATION_TIME = 24 weeks;
+  // Token migration should be open no shorter than 16 weeks,
+  // which is roughly 4 months
+  uint256 constant public MIGRATION_TIME = 16 weeks;
 
   event Initialized(uint256 initializeTime);
   event MigrationOpen();

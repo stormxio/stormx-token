@@ -15,8 +15,8 @@ const NewToken = artifacts.require("StormXToken");
 
 contract("Token swap GSN test", async function(accounts) {
   const provider = Constants.PROVIDER;
-  // 24 weeks of forced token migration open time
-  const migrationTime = 24 * 7 * 24 *3600;
+  // 16 weeks of forced token migration open time
+  const migrationTime = 16 * 7 * 24 *3600;
   let owner = accounts[0];
   let user = accounts[2];
   let reserve = accounts[4];
@@ -189,7 +189,7 @@ contract("Token swap GSN test", async function(accounts) {
   });
 
   it("revert if invalid parameters provided in disabling token swap via GSN call test", async function() {
-    // advance time by 24 weeks
+    // advance time by 16 weeks
     await Utils.progressTime(migrationTime);
 
     await Utils.assertTxFail(this.recipient.methods.disableMigration(Constants.ADDRESS_ZERO).send({from: owner}));
@@ -199,7 +199,7 @@ contract("Token swap GSN test", async function(accounts) {
 
   it("owner and only owner can disable token swap via GSN call success test", async function() {
     let newReserve = accounts[7];
-    // advance time by 24 weeks
+    // advance time by 16 weeks
     await Utils.progressTime(migrationTime);
 
     // user fails to disable token swap

@@ -11,8 +11,8 @@ contract("StormX token swap test", async function(accounts) {
   const reserve = accounts[2];
   const newOwner = accounts[3];
 
-  // set migration time as 24 weeks as required
-  const migrationTime = 24 * 7 * 24 * 3600;
+  // set migration time as 16 weeks as required
+  const migrationTime = 16 * 7 * 24 * 3600;
 
   let stormX;
   let oldToken;
@@ -103,7 +103,7 @@ contract("StormX token swap test", async function(accounts) {
   });
 
   it("token swap reverts when it is not available test", async function() {
-    // advance time by 24 weeks
+    // advance time by 16 weeks
     await Utils.progressTime(migrationTime);
     
     // non-owner fails to close token migration
@@ -126,7 +126,7 @@ contract("StormX token swap test", async function(accounts) {
     // closing fails if the specified time period has not passed yet
     await Utils.assertTxFail(swap.disableMigration(reserve, {from: owner}));
 
-    // advance time by 24 weeks
+    // advance time by 16 weeks
     await Utils.progressTime(migrationTime);
     
     // non-owner fails to close token migration
@@ -173,7 +173,7 @@ contract("StormX token swap test", async function(accounts) {
     await testSwap.initialize({from: owner});
     assert.isTrue(await testSwap.migrationOpen());
     
-    // advance time by 24 weeks
+    // advance time by 16 weeks
     await Utils.progressTime(migrationTime);
 
     // owner can close token swap 

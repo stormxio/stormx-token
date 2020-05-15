@@ -1,5 +1,5 @@
-const Transfers = artifacts.require("Transfers");
-const StormX = artifacts.require("StormXToken");
+const Transfers = artifacts.require('Transfers');
+const StormX = artifacts.require('StormXToken');
 const truffleConfig = require('../truffle.js');
 const utils = require('./Utils.js');
 

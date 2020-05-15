@@ -26,7 +26,7 @@ module.exports = {
       gas: 0xffffffffff,
       gasPrice: 1000000000
     },
-    ropsten: {
+    /*ropsten: {
       provider: function() {
         const credentials = require("./credentials.js");
         return new HDWalletProvider(credentials.mnemonic, `https://ropsten.infura.io/v3/${credentials.infura_apikey}`);
@@ -37,6 +37,6 @@ module.exports = {
       account: "0xb6EE73c5417559ad633bd14a1DFF6eb7b1B4F932",
       reserve: "0xb6EE73c5417559ad633bd14a1DFF6eb7b1B4F932",
       skipDryRun: true,
-    }
+    }*/
   }
 };

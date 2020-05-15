@@ -10,12 +10,12 @@ contract.only("Transfers test", async function(accounts) {
   const user = accounts[3];
   const receiver = accounts[4];
   
-
   let stormX;
+  let transfersContract;
 
   beforeEach(async function(){
     stormX = await STMX.new(reserve, {from: owner});
-    transfers = await Transfers.new(STMX.address, {from: owner});
+    transfersContract = await Transfers.new(STMX.address, {from: owner});
 
     // initialize
     await stormX.initialize(mockSwap, {from: owner});
@@ -25,13 +25,13 @@ contract.only("Transfers test", async function(accounts) {
     assert.equal(await stormX.balanceOf(owner), 10000);
   });
 
-  it("transfers success test", async function() {
-    await stormX.approve(transfers.address, 3, {from: owner});
+  it("transfersContract success test", async function() {
+    await stormX.approve(transfersContract.address, 3, {from: owner});
 
     let recipients = [receiver, receiver, user];
     let values = [1, 1, 1];
 
-    await transfers.transfers(recipients, values, {from: owner});
+    await transfersContract.transfers(recipients, values, {from: owner});
     assert.equal(await stormX.balanceOf(owner), 97);
     assert.equal(await stormX.balanceOf(receiver), 2);
     assert.equal(await stormX.balanceOf(user), 1);
@@ -40,7 +40,7 @@ contract.only("Transfers test", async function(accounts) {
   it("revert if any transfer fails test", async function() {
     let recipients = [receiver, receiver];
     let values = [1000, 1];
-    await Utils.assertTxFail(stormX.transfers(recipients, values, {from: user}));
+    await Utils.assertTxFail(transfersContract.transfers(recipients, values, {from: owner}));
   });
 });
 

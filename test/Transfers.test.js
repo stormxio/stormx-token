@@ -3,7 +3,7 @@ const Transfers = artifacts.require("Transfers");
 const Utils = require("./Utils.js");
 const Constants = require("./Constants.js");
 
-contract.only("Transfers test", async function(accounts) {
+contract("Transfers test", async function(accounts) {
   const owner = accounts[0];
   const reserve = accounts[1];
   const mockSwap = accounts[2];
@@ -15,7 +15,7 @@ contract.only("Transfers test", async function(accounts) {
 
   beforeEach(async function(){
     stormX = await STMX.new(reserve, {from: owner});
-    transfersContract = await Transfers.new(STMX.address, {from: owner});
+    transfersContract = await Transfers.new(stormX.address, {from: owner});
 
     // initialize
     await stormX.initialize(mockSwap, {from: owner});
@@ -32,7 +32,7 @@ contract.only("Transfers test", async function(accounts) {
     let values = [1, 1, 1];
 
     await transfersContract.transfers(recipients, values, {from: owner});
-    assert.equal(await stormX.balanceOf(owner), 97);
+    assert.equal(await stormX.balanceOf(owner), 10000-3);
     assert.equal(await stormX.balanceOf(receiver), 2);
     assert.equal(await stormX.balanceOf(user), 1);
   });

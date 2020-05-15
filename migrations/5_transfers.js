@@ -10,5 +10,5 @@ module.exports = function(deployer, network, accounts) {
     return;
   } // skip the deployment in development
 
-  deployer.then(() => deployer.deploy(Transfers, StormX.address))
+  deployer.then(() => deployer.deploy(Transfers, StormX.address));
 };

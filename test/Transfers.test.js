@@ -1,7 +1,6 @@
 const STMX = artifacts.require("StormXToken");
 const Transfers = artifacts.require("Transfers");
 const Utils = require("./Utils.js");
-const Constants = require("./Constants.js");
 
 contract("Transfers test", async function(accounts) {
   const owner = accounts[0];

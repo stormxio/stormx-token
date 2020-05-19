@@ -1,16 +1,21 @@
-# stormx-token
+# StormX Token Swap
 
-## addresses of deployed contract on ropsten network
+## Addresses of deployed contract on ropsten network
 ``StormXToken``: 0x9d1d1699D2F10b84C5A76782990bBd5bF1415437 (the new token)
 
 ``StormToken``:  0x2704FFda70fe764177C87b38Bf2A1557d2B31B13 (the old token)
 
 ``Swap``: 0xc23dc78BdF24bE35518E0573a3c0fcE59916a12a
 
+## Addresses of deployed contract on mainnet
+``StormXToken (STMX)``: 0xbE9375C6a420D2eEB258962efB95551A5b722803 (the new token)
 
+``StormToken (STORM)``:  0xd0a4b8946cb52f0661273bfbc6fd0e0c75fc6433 (the old token)
+
+``Swap``: 0x617592b603a57B88dC4d2D9cFf180669390134bF
 
 ## Executive Summary
-StormX currently operates an ERC20 token deployed on Ethereum mainnet address ``0xd0a4b8946cb52f0661273bfbc6fd0e0c75fc6433``.​ The token contract includes features for privileged access that allow StormX to mint new tokens for and remove tokens from arbitrary accounts. The StormX team sought to develop a new ERC20 token smart contract that will not include the aforementioned functions. Additionally, the token should include a new feature for locking tokens (so-called “staking”). The StormX team sought to reward users who choose to hold and lock their tokens with tokens from their own reserves.
+StormX currently operates an ERC20 token deployed on Ethereum mainnet address ``0xd0a4b8946cb52f0661273bfbc6fd0e0c75fc6433``. The token contract includes features for privileged access that allow StormX to mint new tokens for and remove tokens from arbitrary accounts. The StormX team sought to develop a new ERC20 token smart contract that will not include the aforementioned functions. Additionally, the token should include a new feature for locking tokens (so-called “staking”). The StormX team sought to reward users who choose to hold and lock their tokens with tokens from their own reserves.
 
 This document provides information about the developed solution.
 

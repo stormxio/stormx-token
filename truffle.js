@@ -15,7 +15,8 @@ module.exports = {
   deploy: {
     StormToken: false,
     StormXToken: false,
-    Swap: false
+    Swap: false,
+    Transfers: false
   },
   networks: {
     development: {

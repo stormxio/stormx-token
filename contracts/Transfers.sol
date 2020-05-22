@@ -3,6 +3,7 @@ pragma solidity 0.5.16;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
+
 contract Transfers is Ownable {
 
   address public token;
@@ -11,7 +12,8 @@ contract Transfers is Ownable {
     token = _token;
   }
 
-  function transfers(address[] memory _recipients, uint256[] memory _values) public onlyOwner returns (bool success) {
+  function transfers(address[] memory _recipients, uint256[] memory _values) public onlyOwner
+  returns (bool success) {
     require(_recipients.length == _values.length); // Check if input data is correct
 
     for (uint cnt = 0; cnt < _recipients.length; cnt++) {
